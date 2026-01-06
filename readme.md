@@ -72,7 +72,7 @@ Memudahkan mahasiswa untuk mengetahui update nilai ujian/semester tanpa harus lo
 
 ## Batasan
 
-- **Monitoring Semester Aktif**: Script ini secara default hanya memantau **semester yang sedang aktif** saat ini (halaman default menu Hasil Studi). Contoh: Jika saat ini Semester 3, maka script hanya akan mengecek perubahan nilai untuk Semester 3 saja.
+- **Monitoring Semester Aktif**: Script ini secara default hanya memantau **semester yang sedang aktif** saat ini (halaman default menu Hasil Studi). Contoh: Jika mahasiswa saat ini sedang menempuh Semester 3, maka script hanya akan mengecek perubahan nilai untuk Semester 3 saja.
 
 ## Catatan
 
