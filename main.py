@@ -73,23 +73,31 @@ def get_data():
     try:
         res = session.get(URL_TARGET)
         
-        if "auth/login" in res.url:
-            print("⚠️ Sesi habis (terlempar ke login). Mencoba login ulang...")
-            if do_login():
-                res = session.get(URL_TARGET)
-            else:
-                return []
+        if res.status_code != 200:
+            print(f"⚠️ Server Kampus memberikan respon tidak normal: {res.status_code}")
+            return []
 
         soup_target = BeautifulSoup(res.text, 'html.parser')
         tbody = soup_target.find('tbody')
-        
+
         if not tbody:
-            print("❌ Tabel tidak ditemukan di halaman ini.")
-            return []
+            if "auth/login" in res.url:
+                print("⚠️ Sesi habis (Redirect ke login).")
+            else:
+                print("⚠️ Tabel tidak ditemukan (Sesi gantung/halaman error).")
+            
+            print("🔄 Memaksa login ulang untuk menyegarkan sesi...")
+            if do_login():
+                res = session.get(URL_TARGET)
+                soup_target = BeautifulSoup(res.text, 'html.parser')
+                tbody = soup_target.find('tbody')
+            
+            if not tbody:
+                print("❌ Masih gagal mendapatkan tabel setelah login ulang. Server mungkin sedang down.")
+                return []
 
         results = []
         rows = tbody.find_all('tr')
-        
         for row in rows:
             cols = row.find_all('td')
             if len(cols) >= 6 and not row.get('class'):
@@ -101,16 +109,18 @@ def get_data():
                 col_nilai = cols[4]
                 col_mutu = cols[5]
                 
-                is_empty = "placeholder" in str(col_nilai) or not col_nilai.get_text(strip=True)
+                is_placeholder = "placeholder" in str(col_nilai)
+                is_empty = not col_nilai.get_text(strip=True)
                 
                 results.append({
                     "matkul": matkul,
-                    "nilai": "---" if is_empty else col_nilai.get_text(strip=True),
-                    "mutu": "---" if is_empty else col_mutu.get_text(strip=True)
+                    "nilai": "---" if (is_placeholder or is_empty) else col_nilai.get_text(strip=True),
+                    "mutu": "---" if (is_placeholder or is_empty) else col_mutu.get_text(strip=True)
                 })
         return results
+
     except Exception as e:
-        print(f"❌ Error saat ambil data: {e}")
+        print(f"❌ Error serius di get_data: {e}")
         return []
 
 def monitor():
