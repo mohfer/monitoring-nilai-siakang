@@ -1,0 +1,4 @@
+.github
+.venv
+.env
+last_values.json
