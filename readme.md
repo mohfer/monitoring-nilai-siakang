@@ -25,8 +25,8 @@ Memudahkan mahasiswa untuk mengetahui update nilai ujian/semester tanpa harus lo
 1. **Clone Repository (atau download script)**
 
    ```bash
-   git clone https://github.com/username/get-nilai-siakang.git
-   cd get-nilai-siakang
+   git clone https://github.com/mohfer/monitoring-nilai-siakang
+   cd monitoring-nilai-siakang
    ```
 
 2. **Buat Virtual Environment (Opsional tapi disarankan)**
