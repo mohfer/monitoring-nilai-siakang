@@ -14,6 +14,12 @@ Memudahkan mahasiswa untuk mengetahui update nilai ujian/semester tanpa harus lo
 - 💾 **Penyimpanan Lokal**: Menyimpan data terakhir (`last_values.json`) untuk mendeteksi perubahan.
 - 🧹 **Pembersihan Data**: Membersihkan elemen HTML (badge baru/ulang) agar data yang diambil bersih.
 
+## Screenshot Output
+
+![Output Script](images/output.png)
+
+![Logs Terminal](images/logs.png)
+
 ## Prasyarat
 
 - Python 3.8+
