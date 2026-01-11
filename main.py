@@ -12,6 +12,7 @@ import time
 import json
 import os
 from dotenv import load_dotenv
+import socket
 
 load_dotenv()
 
@@ -25,6 +26,13 @@ CHAT_ID = os.getenv("CHAT_ID")
 
 FILE_DATA = os.getenv("FILE_DATA")
 INTERVAL = int(os.getenv("INTERVAL", 300))
+
+orig_getaddrinfo = socket.getaddrinfo
+
+def getaddrinfo_ipv4(host, port, family=0, type=0, proto=0, flags=0):
+    return orig_getaddrinfo(host, port, socket.AF_INET, type, proto, flags)
+
+socket.getaddrinfo = getaddrinfo_ipv4
 
 session = requests.Session()
 session.headers.update({
@@ -40,10 +48,25 @@ def send_telegram(message):
     """
     url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
     payload = {"chat_id": CHAT_ID, "text": message, "parse_mode": "Markdown"}
-    try:
-        requests.post(url, json=payload)
-    except Exception as e:
-        print(f"Gagal kirim Telegram: {e}")
+    
+    for attempt in range(3):
+        try:
+            response = requests.post(url, json=payload, timeout=30)
+            
+            response.raise_for_status() 
+            return
+            
+        except requests.exceptions.Timeout:
+            print(f"⏳ Timeout pada percobaan {attempt+1}/3. Mencoba lagi...")
+        except requests.exceptions.ConnectionError:
+            print(f"🌐 Masalah koneksi/Reset pada percobaan {attempt+1}/3. Mencoba lagi...")
+        except Exception as e:
+            print(f"⚠️ Gagal kirim Telegram (Percobaan {attempt+1}/3): {e}")
+        
+        if attempt < 2:
+            time.sleep(5)
+    
+    print("❌ Gagal kirim Telegram setelah 3 kali percobaan.")
 
 def do_login():
     """Melakukan proses login untuk mendapatkan session cookie."""
