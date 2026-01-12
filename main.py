@@ -28,6 +28,7 @@ CHAT_ID = os.getenv("CHAT_ID")
 
 FILE_DATA = os.getenv("FILE_DATA")
 INTERVAL = int(os.getenv("INTERVAL", 300))
+TARGET_SEMESTER_CODE = os.getenv("TARGET_SEMESTER_CODE")
 
 SELECTED_SEMESTER_URL = None
 
@@ -226,25 +227,39 @@ def monitor():
     if not semesters:
         print("❌ Tidak dapat menemukan daftar semester. Menggunakan default sistem.")
     else:
-        print("\n📋 Daftar Semester Tersedia:")
-        for idx, sem in enumerate(semesters):
-            print(f"{idx+1}. {sem['title']} (Kode: {sem['code']})")
-            
-        while True:
-            try:
-                choice = int(input("\n👉 Pilih nomor semester yang ingin dipantau: "))
-                if 1 <= choice <= len(semesters):
-                    selected = semesters[choice-1]
-                    SELECTED_SEMESTER_URL = selected['url']
-                    print(f"✅ Memilih: {selected['title']}")
-                    
-                    print("🔄 Mengaktifkan semester...")
-                    session.get(SELECTED_SEMESTER_URL)
+        selected = None
+        
+        if TARGET_SEMESTER_CODE:
+            print(f"⚙️ Mencari semester dengan kode konfigurasi: {TARGET_SEMESTER_CODE}")
+            for sem in semesters:
+                if sem['code'] == TARGET_SEMESTER_CODE:
+                    selected = sem
                     break
-                else:
-                    print("🚫 Pilihan tidak valid.")
-            except ValueError:
-                print("🚫 Masukkan angka.")
+            
+            if not selected:
+                print(f"❌ Semester dengan kode '{TARGET_SEMESTER_CODE}' tidak ditemukan dalam daftar.")
+        
+        if not selected:
+            print("\n📋 Daftar Semester Tersedia:")
+            for idx, sem in enumerate(semesters):
+                print(f"{idx+1}. {sem['title']} (Kode: {sem['code']})")
+                
+            while True:
+                try:
+                    choice = int(input("\n👉 Pilih nomor semester yang ingin dipantau: "))
+                    if 1 <= choice <= len(semesters):
+                        selected = semesters[choice-1]
+                        break
+                    else:
+                        print("🚫 Pilihan tidak valid.")
+                except ValueError:
+                    print("🚫 Masukkan angka.")
+        
+        if selected:
+            SELECTED_SEMESTER_URL = selected['url']
+            print(f"✅ Memilih: {selected['title']}")
+            print("🔄 Mengaktifkan semester...")
+            session.get(SELECTED_SEMESTER_URL)
 
     send_telegram("🤖 Bot Monitoring Siakang Aktif!") 
 

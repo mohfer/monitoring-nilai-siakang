@@ -67,6 +67,7 @@ Memudahkan mahasiswa untuk mengetahui update nilai ujian/semester tanpa harus lo
    - `PASSWORD`: Password Siakang.
    - `TELEGRAM_TOKEN`: Token bot dari @BotFather.
    - `CHAT_ID`: ID chat tujuan notifikasi (bisa dicek lewat bot userinfobot).
+   - `TARGET_SEMESTER_CODE` (Opsional): Isi kode semester (misal: `20251`) untuk bypass pemilihan menu (wajib jika pakai PM2/Background Service).
 
 5. **Jalankan Script**
    ```bash
