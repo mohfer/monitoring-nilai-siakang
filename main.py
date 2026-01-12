@@ -11,6 +11,7 @@ from bs4 import BeautifulSoup
 import time
 import json
 import os
+import sys
 from dotenv import load_dotenv
 import socket
 
@@ -18,6 +19,7 @@ load_dotenv()
 
 URL_LOGIN = os.getenv("URL_LOGIN")
 URL_TARGET = os.getenv("URL_TARGET")
+URL_LIST_SEMESTER = os.getenv("URL_LIST_SEMESTER")
 LOGIN_ID = os.getenv("LOGIN_ID")
 PASSWORD = os.getenv("PASSWORD")
 
@@ -26,6 +28,8 @@ CHAT_ID = os.getenv("CHAT_ID")
 
 FILE_DATA = os.getenv("FILE_DATA")
 INTERVAL = int(os.getenv("INTERVAL", 300))
+
+SELECTED_SEMESTER_URL = None
 
 orig_getaddrinfo = socket.getaddrinfo
 
@@ -86,10 +90,66 @@ def do_login():
         response = session.post(URL_LOGIN, data=login_data)
         if response.ok:
             print("✅ Login berhasil.")
+            if SELECTED_SEMESTER_URL:
+                print("🔄 Mengaktifkan kembali semester terpilih...")
+                try:
+                    session.get(SELECTED_SEMESTER_URL)
+                    print("✅ Semester berhasil diaktifkan ulang.")
+                except Exception as e:
+                    print(f"⚠️ Gagal mengaktifkan ulang semester: {e}")
             return True
     except Exception as e:
         print(f"❌ Error saat login: {e}")
     return False
+
+def get_all_semesters():
+    """Mengambil semua daftar semester yang tersedia dengan pagination."""
+    print("🔄 Mengambil daftar semester...")
+    semesters = []
+    current_url = URL_LIST_SEMESTER
+    
+    while current_url:
+        try:
+            res = session.get(current_url)
+            if res.status_code != 200:
+                print(f"⚠️ Gagal akses list semester: {res.status_code}")
+                break
+
+            soup = BeautifulSoup(res.text, 'html.parser')
+            
+            cards = soup.find_all('div', class_='col-12 col-md-6 col-lg-4')
+            for card in cards:
+                title_elm = card.find('h5', class_='card-title')
+                if not title_elm: continue
+                
+                title = title_elm.get_text(strip=True)
+                
+                code_elm = card.find('p', class_='card-text')
+                code = code_elm.get_text(strip=True).replace("Kode Semester #", "") if code_elm else ""
+                
+                link_elm = card.find('a', class_='btn-primary')
+                url = link_elm['href'] if link_elm else None
+                
+                if title and url:
+                    semesters.append({
+                        'title': title,
+                        'code': code,
+                        'url': url
+                    })
+
+            next_link = soup.find('a', rel='next')
+            if next_link and next_link.has_attr('href'):
+                current_url = next_link['href']
+                if not current_url.startswith('http'):
+                    pass
+            else:
+                current_url = None
+                
+        except Exception as e:
+            print(f"⚠️ Error parsing list semester: {e}")
+            break
+            
+    return semesters
 
 def get_data():
     """Mengambil data nilai menggunakan session yang ada."""
@@ -150,16 +210,43 @@ def monitor():
     """
     Loop utama monitoring.
     1. Login ke sistem.
-    2. Cek data nilai secara berkala (sesuai INTERVAL).
-    3. Bandingkan dengan data lama (last_values.json).
-    4. Kirim notifikasi jika ada perubahan.
+    2. Pilih semester (User Input) -> Set SELECTED_SEMESTER_URL.
+    3. Cek data nilai secara berkala (sesuai INTERVAL).
+    4. Bandingkan dengan data lama (last_values.json).
+    5. Kirim notifikasi jika ada perubahan.
     """
+    global SELECTED_SEMESTER_URL
     print("🚀 Monitoring Siakang Dimulai...")
-    send_telegram("🤖 Bot Monitoring Siakang Aktif!") 
     
     if not do_login():
         print("❌ Login awal gagal. Hentikan script.")
         return
+
+    semesters = get_all_semesters()
+    if not semesters:
+        print("❌ Tidak dapat menemukan daftar semester. Menggunakan default sistem.")
+    else:
+        print("\n📋 Daftar Semester Tersedia:")
+        for idx, sem in enumerate(semesters):
+            print(f"{idx+1}. {sem['title']} (Kode: {sem['code']})")
+            
+        while True:
+            try:
+                choice = int(input("\n👉 Pilih nomor semester yang ingin dipantau: "))
+                if 1 <= choice <= len(semesters):
+                    selected = semesters[choice-1]
+                    SELECTED_SEMESTER_URL = selected['url']
+                    print(f"✅ Memilih: {selected['title']}")
+                    
+                    print("🔄 Mengaktifkan semester...")
+                    session.get(SELECTED_SEMESTER_URL)
+                    break
+                else:
+                    print("🚫 Pilihan tidak valid.")
+            except ValueError:
+                print("🚫 Masukkan angka.")
+
+    send_telegram("🤖 Bot Monitoring Siakang Aktif!") 
 
     while True:
         try:

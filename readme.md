@@ -9,16 +9,19 @@ Memudahkan mahasiswa untuk mengetahui update nilai ujian/semester tanpa harus lo
 ## Fitur Utama
 
 - 🔄 **Monitoring Berkala**: Otomatis mengecek nilai setiap selang waktu tertentu (default: 5 menit).
-- 🔐 **Auto Relogin**: Menangani sesi login yang kadaluarsa secara otomatis.
+- � **Pilih Semester**: Memungkinkan pengguna memilih semester spesifik yang ingin dipantau (Ganjil/Genap/Antara) saat awal script dijalankan.
+- 🔐 **Auto Relogin**: Menangani sesi login yang kadaluarsa secara otomatis dan tetap mempertahankan semester yang dipilih.
 - 📱 **Notifikasi Telegram**: Mengirim pesan detail (Mata Kuliah, Nilai, Mutu) langsung ke Telegram saat ada perubahan.
 - 💾 **Penyimpanan Lokal**: Menyimpan data terakhir (`last_values.json`) untuk mendeteksi perubahan.
 - 🧹 **Pembersihan Data**: Membersihkan elemen HTML (badge baru/ulang) agar data yang diambil bersih.
 
 ## Screenshot Output
 
-![Output Script](images/output.png)
+![Select Semester](images/select-semester.png)
 
 ![Logs Terminal](images/logs.png)
+
+![Output Script](images/output.png)
 
 ## Prasyarat
 
@@ -75,10 +78,6 @@ Memudahkan mahasiswa untuk mengetahui update nilai ujian/semester tanpa harus lo
 - `main.py`: Kode utama program.
 - `last_values.json`: File database lokal (dibuat otomatis).
 - `.env`: File konfigurasi rahasia.
-
-## Batasan
-
-- **Monitoring Semester Aktif**: Script ini secara default hanya memantau **semester yang sedang aktif** saat ini (halaman default menu Hasil Studi). Contoh: Jika mahasiswa saat ini sedang menempuh Semester 3, maka script hanya akan mengecek perubahan nilai untuk Semester 3 saja.
 
 ## Catatan
 
