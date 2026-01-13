@@ -245,7 +245,7 @@ def monitor():
                 
             while True:
                 try:
-                    choice = int(input("\n📌 Pilih nomor semester yang ingin dipantau: "))
+                    choice = int(input("\n👉 Pilih nomor semester yang ingin dipantau: "))
                     if 1 <= choice <= len(semesters):
                         selected = semesters[choice-1]
                         break
