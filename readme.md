@@ -9,9 +9,10 @@ Memudahkan mahasiswa untuk mengetahui update nilai ujian/semester tanpa harus lo
 ## Fitur Utama
 
 - 🔄 **Monitoring Berkala**: Otomatis mengecek nilai setiap selang waktu tertentu (default: 5 menit).
-- � **Pilih Semester**: Memungkinkan pengguna memilih semester spesifik yang ingin dipantau (Ganjil/Genap/Antara) saat awal script dijalankan.
+- 📌 **Pilih Semester**: Memungkinkan pengguna memilih semester spesifik yang ingin dipantau (Ganjil/Genap/Antara) saat awal script dijalankan.
 - 🔐 **Auto Relogin**: Menangani sesi login yang kadaluarsa secara otomatis dan tetap mempertahankan semester yang dipilih.
 - 📱 **Notifikasi Telegram**: Mengirim pesan detail (Mata Kuliah, Nilai, Mutu) langsung ke Telegram saat ada perubahan.
+- 🎉 **Notifikasi Selesai**: Memberikan notifikasi khusus apabila seluruh nilai mata kuliah pada semester tersebut sudah keluar (tidak ada nilai kosong).
 - 💾 **Penyimpanan Lokal**: Menyimpan data terakhir (`last_values.json`) untuk mendeteksi perubahan.
 - 🧹 **Pembersihan Data**: Membersihkan elemen HTML (badge baru/ulang) agar data yang diambil bersih.
 

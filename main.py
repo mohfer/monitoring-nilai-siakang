@@ -11,7 +11,6 @@ from bs4 import BeautifulSoup
 import time
 import json
 import os
-import sys
 from dotenv import load_dotenv
 import socket
 
@@ -246,7 +245,7 @@ def monitor():
                 
             while True:
                 try:
-                    choice = int(input("\n👉 Pilih nomor semester yang ingin dipantau: "))
+                    choice = int(input("\n📌 Pilih nomor semester yang ingin dipantau: "))
                     if 1 <= choice <= len(semesters):
                         selected = semesters[choice-1]
                         break
@@ -264,6 +263,7 @@ def monitor():
     send_telegram("🤖 Bot Monitoring Siakang Aktif!") 
 
     while True:
+        old_data = None
         try:
             current_data = get_data()
             
@@ -292,6 +292,20 @@ def monitor():
                 else:
                     print(f"😴 Tidak ada perubahan. (Terakhir: {time.strftime('%H:%M:%S')} | Berikutnya: {next_check})")
             
+            if current_data:
+                is_complete = all(d['nilai'] != "---" for d in current_data)
+                
+                was_complete = False
+                if old_data:
+                    was_complete = all(d['nilai'] != "---" for d in old_data)
+                
+                if is_complete and not was_complete:
+                    msg_complete = (f"🎉 *SEMUA NILAI SUDAH KELUAR!*\n\n"
+                                    f"Silakan cek portal Siakang untuk detail lengkap.\n"
+                                    f"[Login Siakang]({URL_TARGET})")
+                    send_telegram(msg_complete)
+                    print("✅ Notifikasi semua nilai keluar telah dikirim!")
+
             if current_data:
                 with open(FILE_DATA, "w") as f:
                     json.dump(current_data, f, indent=4)
