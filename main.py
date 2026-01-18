@@ -11,8 +11,19 @@ from bs4 import BeautifulSoup
 import time
 import json
 import os
+import sys
 from dotenv import load_dotenv
 import socket
+import builtins
+from datetime import datetime
+
+def print(*args, **kwargs):
+    now = datetime.now().strftime("[%Y-%m-%d %H:%M:%S]")
+    builtins.print(f"{now}", *args, **kwargs)
+
+if sys.platform == 'win32':
+    sys.stdout.reconfigure(encoding='utf-8')
+    sys.stderr.reconfigure(encoding='utf-8')
 
 load_dotenv()
 
@@ -89,6 +100,10 @@ def do_login():
         
         response = session.post(URL_LOGIN, data=login_data)
         if response.ok:
+            if "Identitas tersebut tidak cocok dengan data kami" in response.text:
+                print("❌ Login gagal: Identitas (NIM/Password) salah.")
+                return False
+                
             print("✅ Login berhasil.")
             if SELECTED_SEMESTER_URL:
                 print("🔄 Mengaktifkan kembali semester terpilih...")
@@ -161,6 +176,22 @@ def get_data():
             return []
 
         soup_target = BeautifulSoup(res.text, 'html.parser')
+
+        try:
+            hitung_ips_link = None
+            for a_tag in soup_target.find_all('a'):
+                if "Hitung IPS" in a_tag.get_text():
+                    hitung_ips_link = a_tag['href']
+                    break
+            
+            if hitung_ips_link:
+                print("🔄 Menjalankan proses Hitung IPS...")
+                session.get(hitung_ips_link)
+                res = session.get(URL_TARGET)
+                soup_target = BeautifulSoup(res.text, 'html.parser')
+        except Exception as e:
+            print(f"⚠️ Gagal menjalankan Hitung IPS: {e}")
+
         tbody = soup_target.find('tbody')
 
         if not tbody:
@@ -181,12 +212,24 @@ def get_data():
 
         results = []
         rows = tbody.find_all('tr')
+        total_sks = 0
+        
         for row in rows:
             cols = row.find_all('td')
             if len(cols) >= 6 and not row.get('class'):
                 matkul_cell = cols[2]
+                
+                sks_val = 0
                 for badge in matkul_cell.find_all('span', class_='badge'):
+                    badge_text = badge.get_text(strip=True)
+                    if "SKS" in badge_text:
+                        try:
+                            sks_val = int(badge_text.replace("SKS", "").strip())
+                        except:
+                            pass
                     badge.decompose()
+                
+                total_sks += sks_val
                 matkul = matkul_cell.get_text(strip=True)
                 
                 col_nilai = cols[4]
@@ -197,14 +240,55 @@ def get_data():
                 
                 results.append({
                     "matkul": matkul,
+                    "sks": sks_val,
                     "nilai": "---" if (is_placeholder or is_empty) else col_nilai.get_text(strip=True),
                     "mutu": "---" if (is_placeholder or is_empty) else col_mutu.get_text(strip=True)
                 })
-        return results
+
+        ip_val = "-"
+        ipk_val = "-"
+        try:
+            for p in soup_target.find_all('p'):
+                text = p.get_text(strip=True)
+                if "IP :" in text and "IPK" not in text:
+                    ip_val = text.split(":")[-1].strip()
+                elif "IPK :" in text:
+                    ipk_val = text.split(":")[-1].strip()
+        except Exception as e:
+            print(f"⚠️ Gagal parsing IP/IPK: {e}")
+        
+        user_name = "-"
+        user_nim = LOGIN_ID
+        
+        try:
+            name_elem = soup_target.select_one('.pro-user-name')
+            if name_elem:
+                full_text = name_elem.get_text(strip=True)
+                user_name = full_text
+            else:
+                user_box_name = soup_target.select_one('.user-box .dropdown-toggle')
+                if user_box_name:
+                    user_name = user_box_name.get_text(strip=True)
+                    
+            user_name = user_name.replace("", "").strip()
+                
+        except Exception as e:
+            print(f"⚠️ Gagal parsing Nama User: {e}")
+
+        final_data = {
+            "nama": user_name,
+            "nim": user_nim,
+            "ips": ip_val,
+            "ipk": ipk_val,
+            "total_sks": total_sks,
+            "nilai": results
+        }
+
+        return final_data
 
     except Exception as e:
         print(f"❌ Error serius di get_data: {e}")
-        return []
+        return None
 
 def monitor():
     """
@@ -270,13 +354,24 @@ def monitor():
             next_check = time.strftime('%H:%M:%S', time.localtime(time.time() + INTERVAL))
             
             if not current_data:
-                print(f"⚠️ Data kosong. Akan dicoba lagi pada: {next_check}")
+                print(f"⚠️ Data kosong atau gagal diambil. Akan dicoba lagi pada: {next_check}")
             elif os.path.exists(FILE_DATA):
-                with open(FILE_DATA, "r") as f:
-                    old_data = json.load(f)
+                try:
+                    with open(FILE_DATA, "r") as f:
+                        old_data = json.load(f)
+                except Exception:
+                    old_data = None
                 
+                old_courses = []
+                if isinstance(old_data, list):
+                     old_courses = old_data
+                elif isinstance(old_data, dict):
+                     old_courses = old_data.get('nilai', [])
+
+                current_courses = current_data.get('nilai', [])
+
                 changes = []
-                for cur, old in zip(current_data, old_data):
+                for cur, old in zip(current_courses, old_courses):
                     if old['nilai'] != cur['nilai']:
                         msg = (f"🔔 *NILAI KELUAR!*\n\n"
                                 f"📚 *Matkul:* {cur['matkul']}\n"
@@ -285,6 +380,12 @@ def monitor():
                                 f"Cek di: [Siakang Untirta]({URL_TARGET})")
                         changes.append(msg)
                 
+                if isinstance(old_data, dict):
+                    if old_data.get('ips') != current_data.get('ips') and current_data.get('ips') != "-":
+                         changes.append(f"📈 *IPS Berubah*: {old_data.get('ips')} -> {current_data.get('ips')}")
+                    if old_data.get('ipk') != current_data.get('ipk') and current_data.get('ipk') != "-":
+                         changes.append(f"📈 *IPK Berubah*: {old_data.get('ipk')} -> {current_data.get('ipk')}")
+
                 if changes:
                     for change in changes:
                         send_telegram(change)
@@ -293,14 +394,18 @@ def monitor():
                     print(f"😴 Tidak ada perubahan. (Terakhir: {time.strftime('%H:%M:%S')} | Berikutnya: {next_check})")
             
             if current_data:
-                is_complete = all(d['nilai'] != "---" for d in current_data)
+                current_courses = current_data.get('nilai', [])
+                is_complete = all(d['nilai'] != "---" for d in current_courses)
                 
                 was_complete = False
                 if old_data:
-                    was_complete = all(d['nilai'] != "---" for d in old_data)
+                     old_courses = old_data if isinstance(old_data, list) else old_data.get('nilai', [])
+                     was_complete = all(d['nilai'] != "---" for d in old_courses)
                 
                 if is_complete and not was_complete:
                     msg_complete = (f"🎉 *SEMUA NILAI SUDAH KELUAR!*\n\n"
+                                    f"👤 *{current_data.get('nama')}*\n"
+                                    f"📈 *IPS:* {current_data.get('ips')} | *IPK:* {current_data.get('ipk')}\n"
                                     f"Silakan cek portal Siakang untuk detail lengkap.\n"
                                     f"[Login Siakang]({URL_TARGET})")
                     send_telegram(msg_complete)
@@ -312,6 +417,8 @@ def monitor():
                 
         except Exception as e:
             print(f"❌ Error di loop monitor: {e}")
+            import traceback
+            traceback.print_exc()
             
         time.sleep(INTERVAL)
 

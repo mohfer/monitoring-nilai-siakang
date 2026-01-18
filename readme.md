@@ -1,87 +1,120 @@
 # Monitoring Nilai Siakang
 
-Script Python sederhana untuk memantau perubahan nilai pada portal akademik **Siakang Untirta**. Script ini secara berkala mengecek halaman hasil studi dan mengirimkan notifikasi ke Telegram jika ada nilai baru yang keluar atau terjadi perubahan nilai.
+Aplikasi monitoring nilai akademik **Siakang Untirta** berbasis web yang robust dan modern. Memungkinkan Anda memantau nilai dari **banyak akun mahasiswa sekaligus** (Multi-account), mendapatkan notifikasi Real-time via Telegram, dan melihat riwayat nilai dalam Dashboard yang interaktif.
 
-## Tujuan
+## ✨ Fitur Utama
 
-Memudahkan mahasiswa untuk mengetahui update nilai ujian/semester tanpa harus login dan me-refresh halaman Siakang secara manual berulang kali.
+- 🖥️ **Web Dashboard Modern**: Antarmuka Vue.js responsif dengan Dark Mode.
+- 👥 **Multi-Account Manager**: Pantau nilai untuk banyak akun (NIM) secara bersamaan dalam satu server.
+- 📱 **Notifikasi Telegram**: Pesan otomatis saat nilai keluar (Nilai Angka, Mutu, dan Perubahan IP/IPK).
+- 📊 **Data Viewer**: Lihat detail transkrip sementara, IP, IPK, dan Total SKS langsung di dashboard.
+- 🔍 **Semester Auto-Fetch**: Otomatis mendeteksi dan memilih semester aktif dari akun Siakang.
+- 🛠️ **Process Management**: Start/Stop monitoring per-akun dan lihat logs realtime.
+- 🐳 **Docker Ready**: Deployment mudah dan terisolasi menggunakan Docker Compose.
 
-## Fitur Utama
+## 📸 Screenshots
 
-- 🕐 **Monitoring Berkala**: Otomatis mengecek nilai setiap selang waktu tertentu (default: 5 menit).
-- 📌 **Pilih Semester**: Memungkinkan pengguna memilih semester spesifik yang ingin dipantau (Ganjil/Genap/Antara) saat awal script dijalankan.
-- 🔐 **Auto Relogin**: Menangani sesi login yang kadaluarsa secara otomatis dan tetap mempertahankan semester yang dipilih.
-- 📱 **Notifikasi Telegram**: Mengirim pesan detail (Mata Kuliah, Nilai, Mutu) langsung ke Telegram saat ada perubahan.
-- 🎉 **Notifikasi Selesai**: Memberikan notifikasi khusus apabila seluruh nilai mata kuliah pada semester tersebut sudah keluar (tidak ada nilai kosong).
-- 💾 **Penyimpanan Lokal**: Menyimpan data terakhir (`last_values.json`) untuk mendeteksi perubahan.
-- 🧹 **Pembersihan Data**: Membersihkan elemen HTML (badge baru/ulang) agar data yang diambil bersih.
+### Dashboard List
 
-## Screenshot Output
+![Lists](images/lists.png)
 
-![Select Semester](images/select-semester.png)
+### Data & Nilai
 
-![Logs Terminal](images/logs.png)
+![Data](images/data.png)
 
-![Output Script](images/output.png)
+### Logs Terminal
 
-## Prasyarat
+![Logs](images/logs.png)
 
-- Python 3.8+
-- Akun Siakang (NIM & Password)
-- Bot Telegram (Token & Chat ID)
+### Output Script
 
-## Cara Install & Penggunaan
+![Output](images/output.png)
 
-1. **Clone Repository (atau download script)**
+## 🚀 Cara Install & Penggunaan
+
+Sangat direkomendasikan menggunakan **Docker** untuk kemudahan instalasi dan isolasi environment.
+
+### Opsi 1: Menggunakan Docker (Recommended)
+
+Pastikan [Docker Desktop](https://www.docker.com/products/docker-desktop/) sudah terinstall.
+
+1. **Clone Repository**
 
    ```bash
    git clone https://github.com/mohfer/monitoring-nilai-siakang
    cd monitoring-nilai-siakang
    ```
 
-2. **Buat Virtual Environment (Opsional tapi disarankan)**
-
-   ```bash
-   python -m venv .venv
-   # Windows
-   .venv\Scripts\activate
-   # Linux/Mac
-   source .venv/bin/activate
-   ```
-
-3. **Install Dependencies**
-
-   ```bash
-   pip install -r requirements.txt
-   ```
-
-4. **Konfigurasi Environment**
-   Salin file `.env.example` menjadi `.env` dan isi data Anda:
+2. **Setup Environment Variable**
+   Duplikasi file `.env.example` menjadi `.env` dan isi `TELEGRAM_TOKEN`.
 
    ```bash
    cp .env.example .env
+   # Edit file .env dan masukkan Token Telegram Bot Anda
    ```
 
-   Edit file `.env`:
+3. **Jalankan Aplikasi**
+   Script akan otomatis membangun image Backend & Frontend.
 
-   - `LOGIN_ID`: Email/NIM login Siakang.
-   - `PASSWORD`: Password Siakang.
-   - `TELEGRAM_TOKEN`: Token bot dari @BotFather.
-   - `CHAT_ID`: ID chat tujuan notifikasi (bisa dicek lewat bot userinfobot).
-   - `TARGET_SEMESTER_CODE` (Opsional): Isi kode semester (misal: `20251`) untuk bypass pemilihan menu (wajib jika pakai PM2/Background Service).
-
-5. **Jalankan Script**
    ```bash
-   python main.py
+   docker-compose up -d --build
    ```
 
-## Struktur File
+4. **Akses Dashboard**
+   Buka browser dan akses: `http://localhost:3000`
 
-- `main.py`: Kode utama program.
-- `last_values.json`: File database lokal (dibuat otomatis).
-- `.env`: File konfigurasi rahasia.
+---
 
-## Catatan
+### Opsi 2: Instalasi Manual (Developer)
 
-- Script ini menggunakan _web scraping_. Perubahan tampilan pada website Siakang mungkin dapat menyebabkan script gagal mengambil data.
-- Gunakan interval waktu yang wajar (jangan terlalu cepat) agar tidak membebani server kampus.
+Jika ingin menjalankan tanpa Docker untuk keperluan development.
+
+**Prerequisites:**
+
+- Python 3.10+
+- Node.js 18+
+
+#### 1. Setup Backend
+
+```bash
+# Pastikan berada di root folder project
+cp .env.example .env
+# Edit file .env dan isi TELEGRAM_TOKEN=""
+
+python -m venv .venv
+# Windows:
+.venv\Scripts\activate
+# Mac/Linux:
+source .venv/bin/activate
+
+pip install -r requirements.txt
+python -m uvicorn server.main:app --reload --port 8000
+# Server berjalan di http://localhost:8000
+```
+
+#### 2. Setup Frontend
+
+```bash
+cd frontend
+npm install
+npm run dev
+# Frontend berjalan di http://localhost:5173
+```
+
+## 💡 Cara Menggunakan
+
+1. Buka Dashboard (`http://localhost:3000` jika Docker, atau `http://localhost:5173` jika Manual).
+2. Klik tombol **"+ New Task"**.
+3. Masukkan:
+   - **Friendly Name**: Nama bebas (misal: "Punya Ferdi").
+   - **Login ID**: NIM/Email Siakang.
+   - **Password**: Password Siakang.
+   - **Telegram Chat ID**: ID Chat tujuan notifikasi (Gunakan @userinfobot di Telegram untuk cek ID).
+4. Klik **"Fetch"** pada bagian Semester Code untuk mengambil list semester otomatis, lalu pilih semester.
+5. Klik **Save**.
+6. Klik tombol **Start (▶)** pada kartu task untuk memulai monitoring.
+7. Gunakan tombol **Logs (📄)** untuk melihat aktivitas realtime atau **Data (📊)** untuk melihat nilai yang sudah diambil.
+
+## ⚠️ Disclaimer
+
+Aplikasi ini menggunakan metode _web scraping_. Perubahan tampilan atau keamanan pada website Siakang Untirta dapat menyebabkan aplikasi ini berhenti bekerja sewaktu-waktu. Gunakan interval waktu yang wajar (default 300 detik/5 menit) untuk menghindari pemblokiran IP atau beban berlebih pada server kampus.
