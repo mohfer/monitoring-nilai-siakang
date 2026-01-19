@@ -304,6 +304,8 @@ def monitor():
     run_once = "--run-once" in sys.argv
     print(f"🚀 Monitoring Siakang Dimulai... {'(Mode Sekali Jalan)' if run_once else ''}")
     
+    SELECTED_SEMESTER_TITLE = ""
+
     if not do_login():
         print("❌ Login awal gagal. Hentikan script.")
         return
@@ -342,6 +344,7 @@ def monitor():
         
         if selected:
             SELECTED_SEMESTER_URL = selected['url']
+            SELECTED_SEMESTER_TITLE = selected['title']
             print(f"✅ Memilih: {selected['title']}")
             print("🔄 Mengaktifkan semester...")
             session.get(SELECTED_SEMESTER_URL)
@@ -376,7 +379,9 @@ def monitor():
                 changes = []
                 for cur, old in zip(current_courses, old_courses):
                     if old['nilai'] != cur['nilai']:
-                        msg = (f"🔔 *NILAI KELUAR!*\n\n"
+                        semester_info = f"🎓 *{SELECTED_SEMESTER_TITLE}*\n\n" if SELECTED_SEMESTER_TITLE else ""
+                        msg = (f"🔔 *NILAI KELUAR!*\n"
+                                f"{semester_info}"
                                 f"📚 *Matkul:* {cur['matkul']}\n"
                                 f"📊 *Nilai:* `{cur['nilai']}`\n"
                                 f"✨ *Mutu:* `{cur['mutu']}`\n\n"
@@ -406,7 +411,9 @@ def monitor():
                      was_complete = all(d['nilai'] != "---" for d in old_courses)
                 
                 if is_complete and not was_complete:
-                    msg_complete = (f"🎉 *SEMUA NILAI SUDAH KELUAR!*\n\n"
+                    semester_info = f"🎓 *{SELECTED_SEMESTER_TITLE}*\n\n" if SELECTED_SEMESTER_TITLE else ""
+                    msg_complete = (f"🎉 *SEMUA NILAI SUDAH KELUAR!*\n"
+                                    f"{semester_info}"
                                     f"👤 *{current_data.get('nama')}*\n"
                                     f"📈 *IPS:* {current_data.get('ips')} | *IPK:* {current_data.get('ipk')}\n"
                                     f"Silakan cek portal Siakang untuk detail lengkap.\n"

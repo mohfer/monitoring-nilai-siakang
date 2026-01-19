@@ -19,8 +19,22 @@ def init_db():
                   target_semester_code TEXT,
                   interval INTEGER DEFAULT 300,
                   status TEXT DEFAULT 'stopped', 
-                  pid INTEGER)''')
+                  pid INTEGER,
+                  position INTEGER DEFAULT 0)''')
+    ensure_position_column()
     conn.commit()
+    conn.close()
+
+def ensure_position_column():
+    conn = get_db_connection()
+    c = conn.cursor()
+    c.execute("PRAGMA table_info(tasks)")
+    columns = [info[1] for info in c.fetchall()]
+    if 'position' not in columns:
+        print("Migrating database: Adding 'position' column...")
+        c.execute("ALTER TABLE tasks ADD COLUMN position INTEGER DEFAULT 0")
+        c.execute("UPDATE tasks SET position = id")
+        conn.commit()
     conn.close()
 
 def get_db_connection():

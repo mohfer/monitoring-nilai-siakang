@@ -31,9 +31,18 @@ def on_startup():
 @app.get("/tasks", response_model=ApiResponse[List[dict]])
 def list_tasks():
     conn = get_db_connection()
-    tasks = conn.execute('SELECT * FROM tasks').fetchall()
+    tasks = conn.execute('SELECT * FROM tasks ORDER BY position ASC, id ASC').fetchall()
     conn.close()
     return ApiResponse(code=200, message="Success", data=[dict(t) for t in tasks])
+
+@app.put("/tasks/reorder", response_model=ApiResponse[None])
+def reorder_tasks(ordered_ids: List[int] = Body(...)):
+    conn = get_db_connection()
+    for index, task_id in enumerate(ordered_ids):
+        conn.execute('UPDATE tasks SET position = ? WHERE id = ?', (index, task_id))
+    conn.commit()
+    conn.close()
+    return ApiResponse(code=200, message="Tasks reordered")
 
 @app.post("/tasks", response_model=ApiResponse[dict])
 def create_task(task: TaskCreate):

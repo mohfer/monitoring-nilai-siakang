@@ -1,16 +1,18 @@
 <template>
     <div
         class="bg-white dark:bg-gray-800 rounded-xl shadow-sm hover:shadow-md transition-shadow p-6 border border-gray-100 dark:border-gray-700 flex flex-col h-full">
-        <div class="flex justify-between items-start mb-4">
-            <div class="overflow-hidden">
-                <h3 class="text-xl font-bold text-gray-800 dark:text-gray-100 truncate pr-2">{{ task.name }}</h3>
+        <div class="mb-5">
+            <div class="flex justify-between items-center mb-2">
+                <span
+                    class="px-2.5 py-1 rounded-md text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 border border-transparent"
+                    :class="statusClass">
+                    <component :is="task.status === 'running' ? Play : Square" :size="12" class="fill-current" />
+                    {{ task.status }}
+                </span>
                 <p class="text-sm text-gray-500 dark:text-gray-400 font-mono">{{ task.login_id }}</p>
             </div>
-            <span class="px-2 py-1 rounded-md text-xs font-bold uppercase tracking-wider flex items-center gap-1"
-                :class="statusClass">
-                <component :is="task.status === 'running' ? Play : Square" :size="12" class="fill-current" />
-                {{ task.status }}
-            </span>
+            <h3 class="text-xl font-bold text-gray-800 dark:text-gray-100 leading-tight break-words">{{ task.name }}
+            </h3>
         </div>
 
         <div class="space-y-3 mb-6 flex-grow">
@@ -36,7 +38,8 @@
             </div>
         </div>
 
-        <div class="flex items-center justify-between mt-auto pt-4 border-t border-gray-100 dark:border-gray-700">
+        <div
+            class="flex flex-wrap items-center justify-between mt-auto pt-4 border-t border-gray-100 dark:border-gray-700 gap-y-3">
             <div class="flex gap-2">
                 <button @click="toggleStatus"
                     class="px-4 py-2 rounded-lg text-sm font-semibold transition-all active:scale-95 flex items-center gap-2"
@@ -55,6 +58,11 @@
                     class="text-gray-500 hover:text-green-600 dark:text-gray-400 dark:hover:text-green-400 p-2 rounded hover:bg-gray-50 dark:hover:bg-gray-700 transition"
                     title="View Data">
                     <Table :size="20" />
+                </button>
+                <button @click="$emit('clone')"
+                    class="text-gray-500 hover:text-purple-600 dark:text-gray-400 dark:hover:text-purple-400 p-2 rounded hover:bg-gray-50 dark:hover:bg-gray-700 transition"
+                    title="Clone Task">
+                    <Copy :size="20" />
                 </button>
             </div>
             <div class="flex gap-1">
@@ -222,10 +230,10 @@
 <script setup>
 import { computed, ref, onUnmounted, nextTick } from 'vue'
 import axios from 'axios'
-import { Play, Square, FileText, Edit, Trash2, X, Loader2, Monitor, Timer, Hash, Table, RotateCw } from 'lucide-vue-next'
+import { Play, Square, FileText, Edit, Trash2, X, Loader2, Monitor, Timer, Hash, Table, RotateCw, Copy } from 'lucide-vue-next'
 
 const props = defineProps(['task'])
-const emit = defineEmits(['edit', 'delete', 'refresh'])
+const emit = defineEmits(['edit', 'delete', 'refresh', 'clone'])
 
 const showingLogs = ref(false)
 const showingData = ref(false)

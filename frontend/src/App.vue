@@ -23,10 +23,14 @@
                 </div>
             </div>
 
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                <TaskCard v-for="task in tasks" :key="task.id" :task="task" @edit="openModal(task)"
-                    @delete="deleteTask(task.id)" @refresh="fetchTasks" />
-            </div>
+            <draggable v-model="tasks" item-key="id"
+                class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6" @start="isDragging = true"
+                @end="onDragEnd" :animation="200">
+                <template #item="{ element }">
+                    <TaskCard :task="element" @edit="openModal(element)" @delete="deleteTask(element.id)"
+                        @refresh="fetchTasks" @clone="cloneTask(element)" />
+                </template>
+            </draggable>
 
             <div v-if="tasks.length === 0"
                 class="text-center bg-white dark:bg-gray-800 rounded-xl p-12 shadow-sm border border-gray-100 dark:border-gray-700 mt-8">
@@ -48,6 +52,7 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import axios from 'axios'
+import draggable from 'vuedraggable'
 import TaskCard from './components/TaskCard.vue'
 import TaskModal from './components/TaskModal.vue'
 import { Moon, Sun, Plus, LayoutDashboard } from 'lucide-vue-next'
@@ -56,6 +61,7 @@ const tasks = ref([])
 const showModal = ref(false)
 const selectedTask = ref(null)
 const isDark = ref(false)
+const isDragging = ref(false)
 
 const API_URL = '/api'
 
@@ -70,7 +76,30 @@ const toggleDark = () => {
     }
 }
 
+const onDragEnd = async () => {
+    isDragging.value = false
+    const orderedIds = tasks.value.map(t => t.id)
+    try {
+        await axios.put(`${API_URL}/tasks/reorder`, orderedIds)
+    } catch (e) {
+        console.error("Failed to reorder", e)
+    }
+}
+
+const cloneTask = async (task) => {
+    const newTask = {
+        name: `${task.name} (Copy)`,
+        login_id: task.login_id,
+        password: task.password,
+        chat_id: task.chat_id,
+        target_semester_code: task.target_semester_code,
+        interval: task.interval
+    }
+    await saveTask(newTask)
+}
+
 const fetchTasks = async () => {
+    if (isDragging.value) return
     try {
         const res = await axios.get(`${API_URL}/tasks`)
         tasks.value = res.data.data
