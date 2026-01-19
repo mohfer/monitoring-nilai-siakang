@@ -9,6 +9,7 @@ Aplikasi monitoring nilai akademik **Siakang Untirta** berbasis web yang robust 
 - 📱 **Notifikasi Telegram**: Pesan otomatis saat nilai keluar (Nilai Angka, Mutu, dan Perubahan IP/IPK).
 - 📊 **Data Viewer**: Lihat detail transkrip sementara, IP, IPK, dan Total SKS langsung di dashboard.
 - 🔍 **Semester Auto-Fetch**: Otomatis mendeteksi dan memilih semester aktif dari akun Siakang.
+- ⚡ **Manual Data Fetch**: Update data nilai secara instan tanpa perlu menjalankan proses monitoring terus-menerus.
 - 🛠️ **Process Management**: Start/Stop monitoring per-akun dan lihat logs realtime.
 - 🐳 **Docker Ready**: Deployment mudah dan terisolasi menggunakan Docker Compose.
 
