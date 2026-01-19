@@ -6,7 +6,7 @@ Aplikasi monitoring nilai akademik **Siakang Untirta** berbasis web yang robust 
 
 - 🖥️ **Web Dashboard Modern**: Antarmuka Vue.js responsif dengan Dark Mode.
 - 👥 **Multi-Account Manager**: Pantau nilai untuk banyak akun (NIM) secara bersamaan dalam satu server.
-- 🖱️ **Drag & Drop Reorder**: Atur urutan prioritas pemantauan dengan mudah.
+- 🖱️ **Drag & Drop Reorder**: Atur urutan prioritas dengan mudah menggunakan grip handle (Mobile Friendly).
 - 📋 **One-Click Clone**: Duplikasi konfigurasi task (NIM/Password) untuk membuat task baru lebih cepat.
 - 📱 **Notifikasi Telegram**: Pesan otomatis saat nilai keluar (Nilai Angka, Mutu, dan Perubahan IP/IPK).
 - 📊 **Data Viewer**: Lihat detail transkrip sementara, IP, IPK, dan Total SKS langsung di dashboard.
@@ -109,13 +109,13 @@ npm run dev
 1. Buka Dashboard (`http://localhost:3000` jika Docker, atau `http://localhost:5173` jika Manual).
 2. Klik tombol **"+ New Task"**.
 3. Masukkan:
-   - **Friendly Name**: Nama bebas (misal: "Punya Ferdi").
+   - **Friendly Name**: Nama bebas (misal: "Semester 3").
    - **Login ID**: NIM/Email Siakang.
    - **Password**: Password Siakang.
    - **Telegram Chat ID**: ID Chat tujuan notifikasi (Gunakan @userinfobot di Telegram untuk cek ID).
 4. Klik **"Fetch"** pada bagian Semester Code untuk mengambil list semester otomatis, lalu pilih semester.
 5. Klik **Save**.
-6. Klik tombol **Start (▶)** pada kartu task untuk memulai monitoring.
+6. Klik tombol **Start (▶)** pada task card untuk memulai monitoring.
 7. Gunakan tombol **Logs (📄)** untuk melihat aktivitas realtime atau **Data (📊)** untuk melihat nilai yang sudah diambil.
 
 ## ⚠️ Disclaimer

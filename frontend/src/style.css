@@ -1,3 +1,9 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+.rub-float-effect {
+  @apply shadow-2xl scale-105 cursor-grabbing bg-white dark:bg-gray-800 border-2 border-blue-500 rounded-xl select-none;
+  z-index: 9999 !important;
+  pointer-events: none;
+}

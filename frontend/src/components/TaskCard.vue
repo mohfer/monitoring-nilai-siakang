@@ -9,7 +9,13 @@
                     <component :is="task.status === 'running' ? Play : Square" :size="12" class="fill-current" />
                     {{ task.status }}
                 </span>
-                <p class="text-sm text-gray-500 dark:text-gray-400 font-mono">{{ task.login_id }}</p>
+                <div class="flex items-center gap-2">
+                    <div
+                        class="drag-handle cursor-grab active:cursor-grabbing select-none text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 p-1 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+                        <GripHorizontal :size="16" />
+                    </div>
+                    <p class="text-sm text-gray-500 dark:text-gray-400 font-mono">{{ task.login_id }}</p>
+                </div>
             </div>
             <h3 class="text-xl font-bold text-gray-800 dark:text-gray-100 leading-tight break-words">{{ task.name }}
             </h3>
@@ -230,7 +236,7 @@
 <script setup>
 import { computed, ref, onUnmounted, nextTick } from 'vue'
 import axios from 'axios'
-import { Play, Square, FileText, Edit, Trash2, X, Loader2, Monitor, Timer, Hash, Table, RotateCw, Copy } from 'lucide-vue-next'
+import { Play, Square, FileText, Edit, Trash2, X, Loader2, Monitor, Timer, Hash, Table, RotateCw, Copy, GripHorizontal } from 'lucide-vue-next'
 
 const props = defineProps(['task'])
 const emit = defineEmits(['edit', 'delete', 'refresh', 'clone'])

@@ -25,7 +25,8 @@
 
             <draggable v-model="tasks" item-key="id"
                 class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6" @start="isDragging = true"
-                @end="onDragEnd" :animation="200">
+                @end="onDragEnd" handle=".drag-handle" :animation="200" :force-fallback="true" :gpu-acceleration="false"
+                ghost-class="opacity-0" fallback-class="rub-float-effect">
                 <template #item="{ element }">
                     <TaskCard :task="element" @edit="openModal(element)" @delete="deleteTask(element.id)"
                         @refresh="fetchTasks" @clone="cloneTask(element)" />
