@@ -6,9 +6,9 @@ Aplikasi monitoring nilai akademik **Siakang Untirta** berbasis web yang robust 
 
 - 🖥️ **Web Dashboard Modern**: Antarmuka Vue.js responsif dengan Dark Mode.
 - 👥 **Multi-Account Manager**: Pantau nilai untuk banyak akun (NIM) secara bersamaan dalam satu server.
-- �️ **Drag & Drop Reorder**: Atur urutan prioritas pemantauan dengan mudah.
+- 🖱️ **Drag & Drop Reorder**: Atur urutan prioritas pemantauan dengan mudah.
 - 📋 **One-Click Clone**: Duplikasi konfigurasi task (NIM/Password) untuk membuat task baru lebih cepat.
-- �📱 **Notifikasi Telegram**: Pesan otomatis saat nilai keluar (Nilai Angka, Mutu, dan Perubahan IP/IPK).
+- 📱 **Notifikasi Telegram**: Pesan otomatis saat nilai keluar (Nilai Angka, Mutu, dan Perubahan IP/IPK).
 - 📊 **Data Viewer**: Lihat detail transkrip sementara, IP, IPK, dan Total SKS langsung di dashboard.
 - 🔍 **Semester Auto-Fetch**: Otomatis mendeteksi dan memilih semester aktif dari akun Siakang.
 - ⚡ **Manual Data Fetch**: Update data nilai secara instan tanpa perlu menjalankan proses monitoring terus-menerus.
