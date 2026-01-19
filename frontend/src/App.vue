@@ -73,7 +73,7 @@ const toggleDark = () => {
 const fetchTasks = async () => {
     try {
         const res = await axios.get(`${API_URL}/tasks`)
-        tasks.value = res.data
+        tasks.value = res.data.data
     } catch (e) {
         console.error(e)
     }

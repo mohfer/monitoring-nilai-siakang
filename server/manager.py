@@ -135,3 +135,53 @@ def cleanup_task_files(task_id: int):
     except Exception as e:
         print(f"Error cleaning up files for task {task_id}: {e}")
         return False
+
+def run_process_once(task_id: int):
+    """Runs the scraper process once for the given task."""
+    conn = get_db_connection()
+    task = conn.execute('SELECT * FROM tasks WHERE id = ?', (task_id,)).fetchone()
+    conn.close()
+    
+    if not task:
+        return False, "Task not found"
+        
+    if task_id in active_processes and active_processes[task_id].poll() is None:
+        return False, "Task is currently running. Please stop it first."
+
+    env = os.environ.copy()
+    env["LOGIN_ID"] = task['login_id']
+    env["PASSWORD"] = task['password']
+    env["CHAT_ID"] = task['chat_id']
+    if task['target_semester_code']:
+        env["TARGET_SEMESTER_CODE"] = task['target_semester_code']
+    env["INTERVAL"] = "0"
+    env["PYTHONIOENCODING"] = "utf-8"
+    
+    data_dir = os.path.join(os.path.dirname(SCRIPT_PATH), "data", "value")
+    env["FILE_DATA"] = os.path.join(data_dir, f"last_values_{task_id}.json")
+    
+    log_dir = os.path.join(os.path.dirname(SCRIPT_PATH), "data", "logs")
+    log_path = os.path.join(log_dir, f"task_{task_id}.log")
+    
+    try:
+        log_file = open(log_path, "a", encoding="utf-8")
+        creationflags = subprocess.CREATE_NEW_PROCESS_GROUP if os.name == 'nt' else 0
+        
+        proc = subprocess.Popen(
+            [PYTHON_EXE, "-u", SCRIPT_PATH, "--run-once"],
+            env=env,
+            stdout=log_file,
+            stderr=subprocess.STDOUT,
+            cwd=os.path.dirname(SCRIPT_PATH), 
+            creationflags=creationflags
+        )
+        
+        try:
+            proc.wait(timeout=60)
+            return True, "Data refreshed successfully"
+        except subprocess.TimeoutExpired:
+            proc.terminate()
+            return False, "Refresh timed out"
+            
+    except Exception as e:
+        return False, str(e)

@@ -59,14 +59,14 @@
             </div>
             <div class="flex gap-1">
                 <button @click="$emit('edit')"
-                    class="text-gray-400 hover:text-blue-500 p-2 rounded hover:bg-blue-50 dark:hover:bg-gray-700 transition"
+                    class="text-gray-500 hover:text-blue-600 dark:text-gray-400 dark:hover:text-blue-400 p-2 rounded hover:bg-gray-50 dark:hover:bg-gray-700 transition"
                     title="Edit">
-                    <Edit :size="18" />
+                    <Edit :size="20" />
                 </button>
                 <button @click="$emit('delete')"
-                    class="text-gray-400 hover:text-red-500 p-2 rounded hover:bg-red-50 dark:hover:bg-gray-700 transition"
+                    class="text-gray-500 hover:text-red-600 dark:text-gray-400 dark:hover:text-red-400 p-2 rounded hover:bg-gray-50 dark:hover:bg-gray-700 transition"
                     title="Delete">
-                    <Trash2 :size="18" />
+                    <Trash2 :size="20" />
                 </button>
             </div>
         </div>
@@ -116,6 +116,11 @@
                     <h3 class="font-bold text-lg dark:text-white flex items-center gap-2">
                         <Table :size="20" class="text-green-600 dark:text-green-400" />
                         Scraped Data: <span class="text-gray-700 dark:text-gray-300">{{ task.name }}</span>
+                        <button @click="refreshData" :disabled="isRefreshing"
+                            class="ml-2 p-1.5 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 text-blue-600 dark:text-blue-400 transition disabled:opacity-50"
+                            title="Fetch Data Now">
+                            <RotateCw :size="18" :class="{ 'animate-spin': isRefreshing }" />
+                        </button>
                     </h3>
                     <button @click="showingData = false"
                         class="text-gray-500 hover:text-gray-700 dark:hover:text-white transition p-1 hover:bg-gray-200 dark:hover:bg-gray-700 rounded full">
@@ -131,7 +136,6 @@
                         <p class="text-sm text-gray-400">Start the task to scrape data from Siakang.</p>
                     </div>
                     <div v-else class="flex flex-col gap-5">
-                        <!-- Profile Header (New) -->
                         <div v-if="resultData && resultData.nama"
                             class="bg-blue-50 dark:bg-gray-800 p-4 rounded-lg flex flex-col md:flex-row justify-between md:items-center gap-2 border border-blue-100 dark:border-gray-700">
                             <div>
@@ -166,8 +170,9 @@
                             </div>
                         </div>
 
-                        <div class="rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
-                            <table class="w-full text-sm text-left text-gray-500 dark:text-gray-400">
+                        <div class="rounded-lg border border-gray-200 dark:border-gray-700 overflow-x-auto">
+                            <table
+                                class="w-full text-sm text-left text-gray-500 dark:text-gray-400 min-w-[500px] md:min-w-full">
                                 <thead
                                     class="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-800 dark:text-gray-300">
                                     <tr>
@@ -217,13 +222,14 @@
 <script setup>
 import { computed, ref, onUnmounted, nextTick } from 'vue'
 import axios from 'axios'
-import { Play, Square, FileText, Edit, Trash2, X, Loader2, Monitor, Timer, Hash, Table } from 'lucide-vue-next'
+import { Play, Square, FileText, Edit, Trash2, X, Loader2, Monitor, Timer, Hash, Table, RotateCw } from 'lucide-vue-next'
 
 const props = defineProps(['task'])
 const emit = defineEmits(['edit', 'delete', 'refresh'])
 
 const showingLogs = ref(false)
 const showingData = ref(false)
+const isRefreshing = ref(false)
 const logs = ref('Loading...')
 const resultData = ref(null)
 const logContainer = ref(null)
@@ -263,7 +269,7 @@ const toggleStatus = async () => {
         await axios.post(`${API_URL}/tasks/${props.task.id}/${action}`)
         emit('refresh')
     } catch (e) {
-        alert('Failed to change status: ' + (e.response?.data?.detail || e.message))
+        alert('Failed to change status: ' + (e.response?.data?.message || e.message))
     }
 }
 
@@ -288,6 +294,24 @@ const showData = async () => {
     }
 }
 
+const refreshData = async () => {
+    if (isRefreshing.value) return
+    isRefreshing.value = true
+    try {
+        await axios.post(`${API_URL}/tasks/${props.task.id}/refresh`)
+
+        const res = await axios.get(`${API_URL}/tasks/${props.task.id}/data`)
+        resultData.value = res.data.data
+        if (Array.isArray(resultData.value) && resultData.value.length === 0) {
+            resultData.value = null
+        }
+    } catch (e) {
+        alert('Failed to refresh: ' + (e.response?.data?.message || e.message))
+    } finally {
+        isRefreshing.value = false
+    }
+}
+
 const closeLogs = () => {
     showingLogs.value = false
     if (logInterval) {
@@ -299,7 +323,7 @@ const closeLogs = () => {
 const refreshLogs = async () => {
     try {
         const res = await axios.get(`${API_URL}/tasks/${props.task.id}/logs`)
-        const newLogs = res.data.logs || "No logs available."
+        const newLogs = res.data.data || "No logs available."
 
         const container = logContainer.value
         const isNearBottom = container ? (container.scrollHeight - Math.ceil(container.scrollTop) - container.clientHeight < 50) : true
@@ -323,21 +347,33 @@ onUnmounted(() => {
 })
 </script>
 
-<style scoped>
+<style>
 .custom-scrollbar::-webkit-scrollbar {
     width: 10px;
 }
 
 .custom-scrollbar::-webkit-scrollbar-track {
-    background: #1f2937;
+    background: #f9fafb;
 }
 
 .custom-scrollbar::-webkit-scrollbar-thumb {
-    background: #4b5563;
+    background: #d1d5db;
     border-radius: 5px;
 }
 
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: #9ca3af;
+}
+
+.dark .custom-scrollbar::-webkit-scrollbar-track {
+    background: #1f2937;
+}
+
+.dark .custom-scrollbar::-webkit-scrollbar-thumb {
+    background: #4b5563;
+}
+
+.dark .custom-scrollbar::-webkit-scrollbar-thumb:hover {
     background: #6b7280;
 }
 </style>

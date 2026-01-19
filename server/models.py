@@ -1,5 +1,12 @@
 from pydantic import BaseModel
-from typing import Optional
+from typing import Optional, Generic, TypeVar, List
+
+DataT = TypeVar('DataT')
+
+class ApiResponse(BaseModel, Generic[DataT]):
+    code: int
+    message: str
+    data: Optional[DataT] = None
 
 class TaskCreate(BaseModel):
     name: str

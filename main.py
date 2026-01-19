@@ -300,7 +300,9 @@ def monitor():
     5. Kirim notifikasi jika ada perubahan.
     """
     global SELECTED_SEMESTER_URL
-    print("🚀 Monitoring Siakang Dimulai...")
+    
+    run_once = "--run-once" in sys.argv
+    print(f"🚀 Monitoring Siakang Dimulai... {'(Mode Sekali Jalan)' if run_once else ''}")
     
     if not do_login():
         print("❌ Login awal gagal. Hentikan script.")
@@ -344,7 +346,8 @@ def monitor():
             print("🔄 Mengaktifkan semester...")
             session.get(SELECTED_SEMESTER_URL)
 
-    send_telegram("🤖 Bot Monitoring Siakang Aktif!") 
+    if not run_once:
+        send_telegram("🤖 Bot Monitoring Siakang Aktif!") 
 
     while True:
         old_data = None
@@ -419,6 +422,10 @@ def monitor():
             print(f"❌ Error di loop monitor: {e}")
             import traceback
             traceback.print_exc()
+        
+        if run_once:
+            print("✅ Selesai (Mode Sekali Jalan).")
+            break
             
         time.sleep(INTERVAL)
 

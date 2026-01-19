@@ -1,8 +1,9 @@
 from fastapi import FastAPI, HTTPException, Body
 from fastapi.middleware.cors import CORSMiddleware
 from .database import init_db, get_db_connection
-from .models import TaskCreate, TaskUpdate, TaskResponse
-from .manager import start_process, stop_process, get_logs, restore_running_tasks, get_last_values, cleanup_task_files
+from .models import TaskCreate, TaskUpdate, TaskResponse, ApiResponse
+from .manager import start_process, stop_process, get_logs, restore_running_tasks, get_last_values, cleanup_task_files, run_process_once
+from typing import List
 import sys
 import os
 
@@ -27,14 +28,14 @@ def on_startup():
     init_db()
     restore_running_tasks()
 
-@app.get("/tasks")
+@app.get("/tasks", response_model=ApiResponse[List[dict]])
 def list_tasks():
     conn = get_db_connection()
     tasks = conn.execute('SELECT * FROM tasks').fetchall()
     conn.close()
-    return tasks
+    return ApiResponse(code=200, message="Success", data=[dict(t) for t in tasks])
 
-@app.post("/tasks")
+@app.post("/tasks", response_model=ApiResponse[dict])
 def create_task(task: TaskCreate):
     conn = get_db_connection()
     c = conn.execute(
@@ -44,15 +45,15 @@ def create_task(task: TaskCreate):
     task_id = c.lastrowid
     conn.commit()
     conn.close()
-    return {"id": task_id, **task.dict(), "status": "stopped"}
+    return ApiResponse(code=201, message="Task created", data={"id": task_id, **task.dict(), "status": "stopped"})
 
-@app.put("/tasks/{task_id}")
+@app.put("/tasks/{task_id}", response_model=ApiResponse[None])
 def update_task(task_id: int, task: TaskUpdate):
     conn = get_db_connection()
     
     fields = task.dict(exclude_unset=True)
     if not fields:
-        return {"message": "No fields to update"}
+        return ApiResponse(code=400, message="No fields to update")
         
     query = "UPDATE tasks SET " + ", ".join(f"{k} = ?" for k in fields.keys()) + " WHERE id = ?"
     values = list(fields.values()) + [task_id]
@@ -61,9 +62,9 @@ def update_task(task_id: int, task: TaskUpdate):
     conn.commit()
     conn.close()
     
-    return {"message": "Updated"}
+    return ApiResponse(code=200, message="Task updated")
 
-@app.delete("/tasks/{task_id}")
+@app.delete("/tasks/{task_id}", response_model=ApiResponse[None])
 def delete_task(task_id: int):
     stop_process(task_id)
     cleanup_task_files(task_id)
@@ -71,28 +72,35 @@ def delete_task(task_id: int):
     conn.execute('DELETE FROM tasks WHERE id = ?', (task_id,))
     conn.commit()
     conn.close()
-    return {"message": "Deleted"}
+    return ApiResponse(code=200, message="Task deleted")
 
-@app.post("/tasks/{task_id}/start")
+@app.post("/tasks/{task_id}/start", response_model=ApiResponse[None])
 def start_task_endpoint(task_id: int):
     success, msg = start_process(task_id)
     if not success:
         raise HTTPException(status_code=400, detail=msg)
-    return {"message": msg}
+    return ApiResponse(code=200, message=msg)
 
-@app.post("/tasks/{task_id}/stop")
+@app.post("/tasks/{task_id}/stop", response_model=ApiResponse[None])
 def stop_task_endpoint(task_id: int):
     success, msg = stop_process(task_id)
-    return {"message": msg}
+    return ApiResponse(code=200, message=msg)
 
-@app.get("/tasks/{task_id}/logs")
+@app.get("/tasks/{task_id}/logs", response_model=ApiResponse[str])
 def get_logs_endpoint(task_id: int):
-    return {"logs": get_logs(task_id)}
+    return ApiResponse(code=200, message="Success", data=get_logs(task_id))
 
-@app.get("/tasks/{task_id}/data")
+@app.get("/tasks/{task_id}/data", response_model=ApiResponse[dict | list])
 def get_data_endpoint(task_id: int):
     data = get_last_values(task_id)
-    return {"data": data if data else []}
+    return ApiResponse(code=200, message="Success", data=data if data else [])
+
+@app.post("/tasks/{task_id}/refresh", response_model=ApiResponse[None])
+def refresh_task_data(task_id: int):
+    success, msg = run_process_once(task_id)
+    if not success:
+        raise HTTPException(status_code=400, detail=msg)
+    return ApiResponse(code=200, message=msg)
 
 @app.post("/check-semesters")
 def check_semesters(credentials: dict = Body(...)):
