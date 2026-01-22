@@ -78,7 +78,7 @@ npm run dev
 4. **Notifikasi**:
    - Isi **Telegram Chat ID** untuk notifikasi ke Telegram Personal.
    - Isi **WhatsApp Number** (misal: `62812xxx`) atau **Group ID** (misal: `123...@g.us`) untuk notifikasi WA.
-   - _Tips: Gunakan script `python get_waha_groups.py` untuk mencari ID Grup WA._
+   - _Tips: Cek **Group ID** di Dashboard WAHA Anda (Swagger UI) pada menu **Groups > getGroups**._
 5. **Konfigurasi Khusus**:
    - **Mode Nilai**: Klik "Fetch" Semester dan pilih semester aktif.
    - **Mode KRS**: Masukkan nama-nama matkul target (satu per baris) di kolom "Target Courses".
