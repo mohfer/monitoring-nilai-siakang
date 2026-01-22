@@ -2,7 +2,7 @@ from fastapi import FastAPI, HTTPException, Body
 from fastapi.middleware.cors import CORSMiddleware
 from .database import init_db, get_db_connection
 from .models import TaskCreate, TaskUpdate, TaskResponse, ApiResponse
-from .manager import start_process, stop_process, get_logs, restore_running_tasks, get_last_values, cleanup_task_files, run_process_once
+from .manager import start_process, stop_process, get_logs, restore_running_tasks, get_last_values, cleanup_task_files, run_process_once, clear_logs, clear_data
 from typing import List
 import sys
 import os
@@ -48,8 +48,8 @@ def reorder_tasks(ordered_ids: List[int] = Body(...)):
 def create_task(task: TaskCreate):
     conn = get_db_connection()
     c = conn.execute(
-        'INSERT INTO tasks (name, login_id, password, chat_id, target_semester_code, interval) VALUES (?, ?, ?, ?, ?, ?)',
-        (task.name, task.login_id, task.password, task.chat_id, task.target_semester_code, task.interval)
+        'INSERT INTO tasks (name, login_id, password, chat_id, target_semester_code, interval, monitor_type, target_courses, whatsapp_number) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+        (task.name, task.login_id, task.password, task.chat_id, task.target_semester_code, task.interval, task.monitor_type, task.target_courses, task.whatsapp_number)
     )
     task_id = c.lastrowid
     conn.commit()
@@ -98,6 +98,20 @@ def stop_task_endpoint(task_id: int):
 @app.get("/tasks/{task_id}/logs", response_model=ApiResponse[str])
 def get_logs_endpoint(task_id: int):
     return ApiResponse(code=200, message="Success", data=get_logs(task_id))
+
+@app.delete("/tasks/{task_id}/logs", response_model=ApiResponse[None])
+def clear_logs_endpoint(task_id: int):
+    success, msg = clear_logs(task_id)
+    if not success:
+        raise HTTPException(status_code=500, detail=msg)
+    return ApiResponse(code=200, message=msg)
+
+@app.delete("/tasks/{task_id}/data", response_model=ApiResponse[None])
+def clear_data_endpoint(task_id: int):
+    success, msg = clear_data(task_id)
+    if not success:
+        raise HTTPException(status_code=500, detail=msg)
+    return ApiResponse(code=200, message=msg)
 
 @app.get("/tasks/{task_id}/data", response_model=ApiResponse[dict | list])
 def get_data_endpoint(task_id: int):

@@ -2,7 +2,7 @@
     <div class="min-h-screen p-4 md:p-8 transition-colors duration-300 bg-gray-50 dark:bg-gray-900 font-sans"
         :class="{ 'dark': isDark }">
         <div class="max-w-7xl mx-auto">
-            <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
+            <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
                 <div>
                     <h1 class="text-2xl md:text-3xl font-bold text-gray-800 dark:text-white flex items-center gap-3">
                         <LayoutDashboard :size="32" class="text-blue-600 dark:text-blue-400" />
@@ -23,7 +23,34 @@
                 </div>
             </div>
 
-            <draggable v-model="tasks" item-key="id"
+            <div class="flex space-x-1 mb-6 bg-gray-200/50 dark:bg-gray-800/50 p-1 rounded-xl w-fit">
+                <button @click="activeTab = 'all'" :class="[
+                    'px-4 py-2 rounded-lg text-sm font-semibold transition-all flex items-center gap-2',
+                    activeTab === 'all'
+                        ? 'bg-white dark:bg-gray-700 text-blue-600 dark:text-white shadow-sm'
+                        : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
+                ]">
+                    <LayoutGrid :size="16" /> All Tasks
+                </button>
+                <button @click="activeTab = 'nilai'" :class="[
+                    'px-4 py-2 rounded-lg text-sm font-semibold transition-all flex items-center gap-2',
+                    activeTab === 'nilai'
+                        ? 'bg-white dark:bg-gray-700 text-blue-600 dark:text-white shadow-sm'
+                        : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
+                ]">
+                    <GraduationCap :size="16" /> Monitor Nilai
+                </button>
+                <button @click="activeTab = 'krs'" :class="[
+                    'px-4 py-2 rounded-lg text-sm font-semibold transition-all flex items-center gap-2',
+                    activeTab === 'krs'
+                        ? 'bg-white dark:bg-gray-700 text-blue-600 dark:text-white shadow-sm'
+                        : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
+                ]">
+                    <CreditCard :size="16" /> Monitor KRS
+                </button>
+            </div>
+
+            <draggable v-model="filteredTasks" item-key="id"
                 class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6" @start="isDragging = true"
                 @end="onDragEnd" handle=".drag-handle" :animation="200" :force-fallback="true" :gpu-acceleration="false"
                 ghost-class="opacity-0" fallback-class="rub-float-effect">
@@ -33,12 +60,13 @@
                 </template>
             </draggable>
 
-            <div v-if="tasks.length === 0"
+            <div v-if="filteredTasks.length === 0"
                 class="text-center bg-white dark:bg-gray-800 rounded-xl p-12 shadow-sm border border-gray-100 dark:border-gray-700 mt-8">
                 <div class="inline-flex p-4 rounded-full bg-gray-50 dark:bg-gray-700 mb-4">
                     <LayoutDashboard :size="48" class="text-gray-300 dark:text-gray-500" />
                 </div>
-                <p class="text-gray-500 dark:text-gray-400 text-lg mb-4">No monitoring tasks running.</p>
+                <p class="text-gray-500 dark:text-gray-400 text-lg mb-4">No {{ activeTab === 'all' ? '' : activeTab }}
+                    tasks found.</p>
                 <button @click="openModal()"
                     class="text-blue-600 font-medium hover:underline flex items-center justify-center gap-1 mx-auto">
                     <Plus :size="16" /> Create your first task
@@ -51,20 +79,52 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import axios from 'axios'
 import draggable from 'vuedraggable'
 import TaskCard from './components/TaskCard.vue'
 import TaskModal from './components/TaskModal.vue'
-import { Moon, Sun, Plus, LayoutDashboard } from 'lucide-vue-next'
+import { Moon, Sun, Plus, LayoutDashboard, LayoutGrid, GraduationCap, CreditCard } from 'lucide-vue-next'
 
 const tasks = ref([])
 const showModal = ref(false)
 const selectedTask = ref(null)
 const isDark = ref(false)
 const isDragging = ref(false)
+const activeTab = ref('all')
 
 const API_URL = '/api'
+
+const filteredTasks = computed({
+    get() {
+        if (activeTab.value === 'all') return tasks.value
+        return tasks.value.filter(t => {
+            const type = t.monitor_type || 'nilai'
+            return type === activeTab.value
+        })
+    },
+    set(value) {
+        if (activeTab.value === 'all') {
+            tasks.value = value
+        } else {
+            const newFullList = [...tasks.value]
+
+            const indicesToUpdate = []
+            newFullList.forEach((t, index) => {
+                const type = t.monitor_type || 'nilai'
+                if (type === activeTab.value) {
+                    indicesToUpdate.push(index)
+                }
+            })
+
+            indicesToUpdate.forEach((originalIndex, i) => {
+                newFullList[originalIndex] = value[i]
+            })
+
+            tasks.value = newFullList
+        }
+    }
+})
 
 const toggleDark = () => {
     isDark.value = !isDark.value
@@ -94,6 +154,8 @@ const cloneTask = async (task) => {
         password: task.password,
         chat_id: task.chat_id,
         target_semester_code: task.target_semester_code,
+        monitor_type: task.monitor_type,
+        target_courses: task.target_courses,
         interval: task.interval
     }
     await saveTask(newTask)

@@ -1,45 +1,26 @@
-# Monitoring Nilai Siakang
+# Monitoring Nilai & KRS Siakang
 
-Aplikasi monitoring nilai akademik **Siakang Untirta** berbasis web yang robust dan modern. Memungkinkan Anda memantau nilai dari **banyak akun mahasiswa sekaligus** (Multi-account), mendapatkan notifikasi Real-time via Telegram, dan melihat riwayat nilai dalam Dashboard yang interaktif.
+Aplikasi monitoring akademik **Siakang Untirta** berbasis web yang robust dan modern. Kini mendukung pemantauan **Nilai** dan status **Matkul KRS** secara real-time. Memungkinkan Anda memantau banyak akun mahasiswa sekaligus, mengirim notifikasi ke **Telegram** & **WhatsApp**, dan menyediakan dashboard interaktif.
 
 ## ✨ Fitur Utama
 
 - 🖥️ **Web Dashboard Modern**: Antarmuka Vue.js responsif dengan Dark Mode.
-- 👥 **Multi-Account Manager**: Pantau nilai untuk banyak akun (NIM) secara bersamaan dalam satu server.
-- 🖱️ **Drag & Drop Reorder**: Atur urutan prioritas dengan mudah menggunakan grip handle (Mobile Friendly).
-- 📋 **One-Click Clone**: Duplikasi konfigurasi task (NIM/Password) untuk membuat task baru lebih cepat.
-- 📱 **Notifikasi Telegram**: Pesan otomatis saat nilai keluar (Nilai Angka, Mutu, dan Perubahan IP/IPK).
-- 📊 **Data Viewer**: Lihat detail transkrip sementara, IP, IPK, dan Total SKS langsung di dashboard.
-- 🔍 **Semester Auto-Fetch**: Otomatis mendeteksi dan memilih semester aktif dari akun Siakang.
-- ⚡ **Manual Data Fetch**: Update data nilai secara instan tanpa perlu menjalankan proses monitoring terus-menerus.
-- 🛠️ **Process Management**: Start/Stop monitoring per-akun dan lihat logs realtime.
-- 🐳 **Docker Ready**: Deployment mudah dan terisolasi menggunakan Docker Compose.
-
-## 📸 Screenshots
-
-### Dashboard List
-
-![Lists](images/lists.png)
-
-### Data & Nilai
-
-![Data](images/data.png)
-
-### Logs Terminal
-
-![Logs](images/logs.png)
-
-### Output Script
-
-![Output](images/output.png)
+- 🔄 **Dual Monitoring Mode**:
+  - **Monitor Nilai**: Pantau nilai baru, perubahan nilai, IP, dan IPK.
+  - **Monitor KRS**: Pantau ketersediaan slot/kelas Matkul incaran saat masa KRS (Livewire Support).
+- 📲 **Multi-Channel Notification**: Mendukung **Telegram Bot** dan **WhatsApp** (via WAHA) untuk notifikasi instan.
+- 👥 **Multi-Account & Group Support**: Pantau banyak akun sekaligus. Notifikasi WA bisa dikirim ke **Grup WhatsApp**.
+- 🖱️ **Smart Reordering**: Atur urutan prioritas monitoring dengan drag & drop yang cerdas per kategori.
+- 📋 **One-Click Clone**: Duplikasi konfigurasi task untuk setup cepat.
+- 📊 **Visual Data Viewer**:
+  - **Nilai**: Lihat transkrip sementara, Mutu, SKS di tabel rapi.
+  - **KRS**: Indikator warna (Hijau/Merah) untuk status matkul target (Found/Missing).
+- 🛠️ **Full Control**: Start/Stop monitoring, lihat Live Logs, hapus Logs, dan Reset Data scraping langsung dari UI.
+- 🐳 **Docker Ready**: Deployment mudah dengan isolasi environment penuh.
 
 ## 🚀 Cara Install & Penggunaan
 
-Sangat direkomendasikan menggunakan **Docker** untuk kemudahan instalasi dan isolasi environment.
-
 ### Opsi 1: Menggunakan Docker (Recommended)
-
-Pastikan [Docker Desktop](https://www.docker.com/products/docker-desktop/) sudah terinstall.
 
 1. **Clone Repository**
 
@@ -49,50 +30,34 @@ Pastikan [Docker Desktop](https://www.docker.com/products/docker-desktop/) sudah
    ```
 
 2. **Setup Environment Variable**
-   Duplikasi file `.env.example` menjadi `.env` dan isi `TELEGRAM_TOKEN`.
+   Salin `.env.example` ke `.env`:
 
    ```bash
    cp .env.example .env
-   # Edit file .env dan masukkan Token Telegram Bot Anda
    ```
 
-3. **Jalankan Aplikasi**
-   Script akan otomatis membangun image Backend & Frontend.
+   Isi konfigurasi di dalamnya:
+   - `TELEGRAM_TOKEN`: Token bot Telegram (jika pakai).
+   - `WAHA_BASE_URL`: URL server WAHA Anda (opsional, untuk WhatsApp).
+   - `WAHA_API_KEY`: API Key WAHA (jika ada).
 
+3. **Jalankan Aplikasi**
    ```bash
    docker-compose up -d --build
    ```
-
-4. **Akses Dashboard**
-   Buka browser dan akses: `http://localhost:3000`
-
----
+   Akses dashboard di: `http://localhost:3000`
 
 ### Opsi 2: Instalasi Manual (Developer)
 
-Jika ingin menjalankan tanpa Docker untuk keperluan development.
-
-**Prerequisites:**
-
-- Python 3.10+
-- Node.js 18+
+**Prerequisites:** Python 3.10+, Node.js 18+
 
 #### 1. Setup Backend
 
 ```bash
-# Pastikan berada di root folder project
-cp .env.example .env
-# Edit file .env dan isi TELEGRAM_TOKEN=""
-
 python -m venv .venv
-# Windows:
-.venv\Scripts\activate
-# Mac/Linux:
-source .venv/bin/activate
-
+# Activate venv (Windows: .venv\Scripts\activate | Linux: source .venv/bin/activate)
 pip install -r requirements.txt
 python -m uvicorn server.main:app --reload --port 8000
-# Server berjalan di http://localhost:8000
 ```
 
 #### 2. Setup Frontend
@@ -101,23 +66,29 @@ python -m uvicorn server.main:app --reload --port 8000
 cd frontend
 npm install
 npm run dev
-# Frontend berjalan di http://localhost:5173
 ```
 
-## 💡 Cara Menggunakan
+## 💡 Panduan Penggunaan
 
-1. Buka Dashboard (`http://localhost:3000` jika Docker, atau `http://localhost:5173` jika Manual).
-2. Klik tombol **"+ New Task"**.
-3. Masukkan:
-   - **Friendly Name**: Nama bebas (misal: "Semester 3").
-   - **Login ID**: NIM/Email Siakang.
-   - **Password**: Password Siakang.
-   - **Telegram Chat ID**: ID Chat tujuan notifikasi (Gunakan @userinfobot di Telegram untuk cek ID).
-4. Klik **"Fetch"** pada bagian Semester Code untuk mengambil list semester otomatis, lalu pilih semester.
-5. Klik **Save**.
-6. Klik tombol **Start (▶)** pada task card untuk memulai monitoring.
-7. Gunakan tombol **Logs (📄)** untuk melihat aktivitas realtime atau **Data (📊)** untuk melihat nilai yang sudah diambil.
+### Membuat Monitor Baru
+
+1. Klik **"+ New Task"**.
+2. Pilih Tipe: **Nilai (Grades)** atau **KRS (Plans)**.
+3. Masukkan **Login ID** (NIM) & **Password** Siakang.
+4. **Notifikasi**:
+   - Isi **Telegram Chat ID** untuk notifikasi ke Telegram Personal.
+   - Isi **WhatsApp Number** (misal: `62812xxx`) atau **Group ID** (misal: `123...@g.us`) untuk notifikasi WA.
+   - _Tips: Gunakan script `python get_waha_groups.py` untuk mencari ID Grup WA._
+5. **Konfigurasi Khusus**:
+   - **Mode Nilai**: Klik "Fetch" Semester dan pilih semester aktif.
+   - **Mode KRS**: Masukkan nama-nama matkul target (satu per baris) di kolom "Target Courses".
+6. Simpan & Klik **Start (▶)**.
+
+### Fitur Lain
+
+- **Clear Logs**: Klik ikon tempat sampah di modal Logs untuk membersihkan log lama.
+- **Reset Data**: Klik ikon reset di modal Data untuk menghapus cache hasil scraping agar notifikasi bisa muncul lagi saat data baru masuk.
 
 ## ⚠️ Disclaimer
 
-Aplikasi ini menggunakan metode _web scraping_. Perubahan tampilan atau keamanan pada website Siakang Untirta dapat menyebabkan aplikasi ini berhenti bekerja sewaktu-waktu. Gunakan interval waktu yang wajar (default 300 detik/5 menit) untuk menghindari pemblokiran IP atau beban berlebih pada server kampus.
+Aplikasi ini menggunakan metode _web scraping_. Perubahan pada website Siakang Untirta dapat mempengaruhi fungsionalitas. Gunakan interval waktu yang wajar (default 300s) agar tidak membebani server kampus.

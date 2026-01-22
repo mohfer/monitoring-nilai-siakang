@@ -37,7 +37,20 @@ def start_process(task_id: int):
     env = os.environ.copy()
     env["LOGIN_ID"] = task['login_id']
     env["PASSWORD"] = task['password']
-    env["CHAT_ID"] = task['chat_id']
+    
+    if task['chat_id']:
+        env["CHAT_ID"] = task['chat_id']
+    if task['whatsapp_number']:
+        env["WHATSAPP_NUMBER"] = task['whatsapp_number']
+        
+    waha_key = os.getenv("WAHA_API_KEY")
+    if waha_key:
+        env["WAHA_API_KEY"] = waha_key
+
+    if task['monitor_type']:
+        env["MONITOR_TYPE"] = task['monitor_type']
+    if task['target_courses']:
+        env["TARGET_COURSES"] = task['target_courses']
     if task['target_semester_code']:
         env["TARGET_SEMESTER_CODE"] = task['target_semester_code']
     env["INTERVAL"] = str(task['interval'])
@@ -90,7 +103,7 @@ def stop_process(task_id: int):
                 pass 
     else:
         if os.name == 'nt':
-             subprocess.call(['taskkill', '/F', '/T', '/PID', str(proc.pid)])
+            subprocess.call(['taskkill', '/F', '/T', '/PID', str(proc.pid)])
         else:
             proc.terminate()
         
@@ -119,6 +132,25 @@ def get_last_values(task_id: int):
         except:
             return None
     return None
+
+def clear_logs(task_id: int):
+    try:
+        log_path = os.path.join(os.path.dirname(SCRIPT_PATH), "data", "logs", f"task_{task_id}.log")
+        if os.path.exists(log_path):
+            with open(log_path, 'w') as f:
+                pass
+        return True, "Logs cleared"
+    except Exception as e:
+        return False, str(e)
+
+def clear_data(task_id: int):
+    try:
+        json_path = os.path.join(os.path.dirname(SCRIPT_PATH), "data", "value", f"last_values_{task_id}.json")
+        if os.path.exists(json_path):
+            os.remove(json_path)
+        return True, "Data cleared"
+    except Exception as e:
+        return False, str(e)
 
 def cleanup_task_files(task_id: int):
     """Deletes json data and log files associated with the task."""
@@ -151,7 +183,20 @@ def run_process_once(task_id: int):
     env = os.environ.copy()
     env["LOGIN_ID"] = task['login_id']
     env["PASSWORD"] = task['password']
-    env["CHAT_ID"] = task['chat_id']
+    
+    if task['chat_id']:
+        env["CHAT_ID"] = task['chat_id']
+    if task['whatsapp_number']:
+        env["WHATSAPP_NUMBER"] = task['whatsapp_number']
+        
+    waha_key = os.getenv("WAHA_API_KEY")
+    if waha_key:
+        env["WAHA_API_KEY"] = waha_key
+
+    if task['monitor_type']:
+        env["MONITOR_TYPE"] = task['monitor_type']
+    if task['target_courses']:
+        env["TARGET_COURSES"] = task['target_courses']
     if task['target_semester_code']:
         env["TARGET_SEMESTER_CODE"] = task['target_semester_code']
     env["INTERVAL"] = "0"

@@ -2,7 +2,7 @@
     <div @click.self="$emit('close')"
         class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 px-4 backdrop-blur-sm transition-opacity">
         <div
-            class="bg-white dark:bg-gray-800 rounded-xl shadow-2xl w-full max-w-lg border border-gray-100 dark:border-gray-700 transform transition-all animate-in fade-in zoom-in duration-200">
+            class="bg-white dark:bg-gray-800 rounded-xl shadow-2xl w-full max-w-lg border border-gray-100 dark:border-gray-700 transform transition-all animate-in fade-in zoom-in duration-200 max-h-[90vh] overflow-y-auto custom-scrollbar">
             <div class="p-6 pb-0">
                 <h2 class="text-2xl font-bold mb-6 dark:text-white flex items-center gap-2">
                     <Edit3 v-if="task" class="text-blue-600" />
@@ -17,7 +17,24 @@
                     <div>
                         <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Friendly
                             Name</label>
-                        <input v-model="form.name" required placeholder="e.g. My Semester 5" class="input-field" />
+                        <input v-model="form.name" required placeholder="e.g. My Monitor" class="input-field" />
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Monitor
+                            Type</label>
+                        <div class="flex gap-4">
+                            <label class="flex items-center gap-2 cursor-pointer">
+                                <input type="radio" v-model="form.monitor_type" value="nilai"
+                                    class="text-blue-600 focus:ring-blue-500">
+                                <span class="text-gray-700 dark:text-gray-300">Nilai (Grades)</span>
+                            </label>
+                            <label class="flex items-center gap-2 cursor-pointer">
+                                <input type="radio" v-model="form.monitor_type" value="krs"
+                                    class="text-blue-600 focus:ring-blue-500">
+                                <span class="text-gray-700 dark:text-gray-300">KRS (Plans)</span>
+                            </label>
+                        </div>
                     </div>
 
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -41,16 +58,41 @@
                         </div>
                     </div>
 
-                    <div>
+                    <div
+                        class="bg-gray-50 dark:bg-gray-700/30 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
                         <label
-                            class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 flex items-center justify-between">
-                            Telegram Chat ID
-                            <a href="https://t.me/userinfobot" target="_blank"
-                                class="text-xs text-blue-500 hover:underline flex items-center gap-1">
-                                <HelpCircle :size="12" /> Find ID
-                            </a>
+                            class="block text-sm font-semibold text-gray-700 dark:text-gray-200 mb-3 flex items-center gap-2">
+                            <span class="bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300 p-1 rounded">
+                                Notification Channels
+                            </span>
                         </label>
-                        <input v-model="form.chat_id" required class="input-field" placeholder="123456789" />
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div>
+                                <label
+                                    class="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1 flex items-center gap-1">
+                                    Telegram Chat ID
+                                    <a href="https://t.me/userinfobot" target="_blank"
+                                        class="text-blue-500 hover:underline">(Find)</a>
+                                </label>
+                                <input v-model="form.chat_id" class="input-field text-sm" placeholder="123456789" />
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
+                                    WhatsApp Number / Group ID
+                                </label>
+                                <input v-model="form.whatsapp_number" class="input-field text-sm"
+                                    placeholder="628... or 123...@g.us" />
+                            </div>
+                        </div>
+                        <p class="text-xs text-gray-500 mt-2 italic">* Fill at least one to receive notifications.</p>
+                    </div>
+
+                    <div v-if="form.monitor_type === 'krs'">
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                            Target Courses <span class="text-xs text-gray-500">(Names only, one per line)</span>
+                        </label>
+                        <textarea v-model="form.target_courses_text" rows="4" class="input-field font-mono text-sm"
+                            placeholder="Pemrograman Berorientasi Objek&#10;Data Mining&#10;..."></textarea>
                     </div>
 
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -123,23 +165,44 @@ const form = ref({
     login_id: '',
     password: '',
     chat_id: '',
+    whatsapp_number: '',
     target_semester_code: '',
-    interval: 300
+    interval: 300,
+    monitor_type: 'nilai',
+    target_courses_text: ''
 })
 
 watch(() => props.task, (newVal) => {
     semestersList.value = []
     fetchError.value = ''
     if (newVal) {
-        form.value = { ...newVal }
+        let tcText = '';
+        if (newVal.target_courses) {
+            try {
+                const arr = JSON.parse(newVal.target_courses);
+                tcText = Array.isArray(arr) ? arr.join('\n') : newVal.target_courses;
+            } catch {
+                tcText = newVal.target_courses;
+            }
+        }
+
+        form.value = {
+            ...newVal,
+            monitor_type: newVal.monitor_type || 'nilai',
+            whatsapp_number: newVal.whatsapp_number || '',
+            target_courses_text: tcText
+        }
     } else {
         form.value = {
             name: '',
             login_id: '',
             password: '',
             chat_id: '',
+            whatsapp_number: '',
             target_semester_code: '',
-            interval: 300
+            interval: 300,
+            monitor_type: 'nilai',
+            target_courses_text: ''
         }
     }
 }, { immediate: true })
@@ -171,7 +234,21 @@ const fetchSemesters = async () => {
 }
 
 const save = () => {
-    emit('save', form.value)
+    const payload = { ...form.value }
+
+    if (!payload.chat_id && !payload.whatsapp_number) {
+        alert("Please provide at least a Telegram Chat ID or WhatsApp Number.")
+        return
+    }
+
+    const lines = payload.target_courses_text
+        ? payload.target_courses_text.split('\n').map(l => l.trim()).filter(l => l)
+        : [];
+    payload.target_courses = JSON.stringify(lines);
+
+    delete payload.target_courses_text;
+
+    emit('save', payload)
 }
 </script>
 

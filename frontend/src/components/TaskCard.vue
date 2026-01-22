@@ -24,6 +24,15 @@
         <div class="space-y-3 mb-6 flex-grow">
             <div class="flex items-center text-sm">
                 <span class="w-24 text-gray-500 dark:text-gray-400 flex-shrink-0 flex items-center gap-1.5">
+                    <Activity :size="14" /> Type
+                </span>
+                <span class="uppercase text-xs font-bold px-2 py-0.5 rounded"
+                    :class="task.monitor_type === 'krs' ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300' : 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300'">
+                    {{ task.monitor_type === 'krs' ? 'KRS' : 'NILAI' }}
+                </span>
+            </div>
+            <div class="flex items-center text-sm">
+                <span class="w-24 text-gray-500 dark:text-gray-400 flex-shrink-0 flex items-center gap-1.5">
                     <Hash :size="14" /> Semester
                 </span>
                 <span
@@ -95,10 +104,18 @@
                         <FileText :size="20" class="text-blue-600 dark:text-blue-400" />
                         Logs: <span class="text-gray-700 dark:text-gray-300">{{ task.name }}</span>
                     </h3>
-                    <button @click="closeLogs"
-                        class="text-gray-500 hover:text-gray-700 dark:hover:text-white transition p-1 hover:bg-gray-200 dark:hover:bg-gray-700 rounded full">
-                        <X :size="20" />
-                    </button>
+                    <div class="flex items-center gap-1">
+                        <button @click="clearLogs"
+                            class="text-gray-500 hover:text-red-600 dark:hover:text-red-400 transition p-1 hover:bg-gray-200 dark:hover:bg-gray-700 rounded full mr-2"
+                            title="Clear Logs">
+                            <Trash2 :size="18" />
+                        </button>
+                        <button @click="closeLogs"
+                            class="text-gray-500 hover:text-gray-700 dark:hover:text-white transition p-1 hover:bg-gray-200 dark:hover:bg-gray-700 rounded full"
+                            title="Close">
+                            <X :size="20" />
+                        </button>
+                    </div>
                 </div>
                 <div class="flex-grow relative bg-gray-950">
                     <div class="absolute inset-0 overflow-auto p-4 custom-scrollbar" ref="logContainer">
@@ -130,11 +147,19 @@
                     <h3 class="font-bold text-lg dark:text-white flex items-center gap-2">
                         <Table :size="20" class="text-green-600 dark:text-green-400" />
                         Scraped Data: <span class="text-gray-700 dark:text-gray-300">{{ task.name }}</span>
-                        <button @click="refreshData" :disabled="isRefreshing"
-                            class="ml-2 p-1.5 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 text-blue-600 dark:text-blue-400 transition disabled:opacity-50"
-                            title="Fetch Data Now">
-                            <RotateCw :size="18" :class="{ 'animate-spin': isRefreshing }" />
-                        </button>
+                        <div class="ml-4 flex items-center gap-1 bg-gray-100 dark:bg-gray-800 p-1 rounded-lg">
+                            <button @click="clearData"
+                                class="p-1.5 rounded-md hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-500 hover:text-red-600 dark:hover:text-red-400 transition"
+                                title="Reset Data">
+                                <Trash2 :size="16" />
+                            </button>
+                            <div class="w-px h-4 bg-gray-300 dark:bg-gray-600"></div>
+                            <button @click="refreshData" :disabled="isRefreshing"
+                                class="p-1.5 rounded-md hover:bg-gray-200 dark:hover:bg-gray-700 text-blue-600 dark:text-blue-400 transition disabled:opacity-50"
+                                title="Fetch Data Now">
+                                <RotateCw :size="16" :class="{ 'animate-spin': isRefreshing }" />
+                            </button>
+                        </div>
                     </h3>
                     <button @click="showingData = false"
                         class="text-gray-500 hover:text-gray-700 dark:hover:text-white transition p-1 hover:bg-gray-200 dark:hover:bg-gray-700 rounded full">
@@ -143,7 +168,7 @@
                 </div>
 
                 <div class="flex-grow overflow-auto p-4 custom-scrollbar bg-white dark:bg-gray-900">
-                    <div v-if="!resultData || (!resultData.nilai && resultData.length === 0)"
+                    <div v-if="!hasDataDisplay"
                         class="text-center text-gray-500 py-10 flex flex-col items-center gap-3">
                         <Table :size="48" class="text-gray-300" />
                         <p>No data found.</p>
@@ -184,7 +209,40 @@
                             </div>
                         </div>
 
-                        <div class="rounded-lg border border-gray-200 dark:border-gray-700 overflow-x-auto">
+                        <div class="rounded-lg border border-gray-200 dark:border-gray-700 overflow-x-auto"
+                            v-if="task.monitor_type === 'krs'">
+                            <div class="p-4 bg-white dark:bg-gray-900">
+                                <h4 class="font-bold mb-3 text-gray-800 dark:text-white flex items-center gap-2">
+                                    <Activity :size="16" class="text-purple-600" /> Target Courses Status
+                                </h4>
+                                <div v-if="krsCourseStatus.length > 0">
+                                    <ul class="space-y-2">
+                                        <li v-for="(item, idx) in krsCourseStatus" :key="idx"
+                                            class="flex items-center gap-2 p-3 border rounded-lg transition-colors duration-300"
+                                            :class="item.found
+                                                ? 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800'
+                                                : 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800'">
+                                            <div class="h-2 w-2 rounded-full flex-shrink-0"
+                                                :class="item.found ? 'bg-green-500' : 'bg-red-500'"></div>
+                                            <span class="font-medium flex-grow"
+                                                :class="item.found ? 'text-gray-700 dark:text-green-300' : 'text-gray-700 dark:text-red-300'">
+                                                {{ item.name }}
+                                            </span>
+                                            <span class="text-xs px-2 py-0.5 rounded font-bold uppercase"
+                                                :class="item.found ? 'bg-green-200 text-green-800 dark:bg-green-800 dark:text-green-200' : 'bg-red-200 text-red-800 dark:bg-red-800 dark:text-red-200'">
+                                                {{ item.found ? 'Found' : 'Missing' }}
+                                            </span>
+                                        </li>
+                                    </ul>
+                                </div>
+                                <div v-else
+                                    class="text-gray-500 italic p-4 text-center border border-dashed rounded-lg">
+                                    No target courses configured.
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="rounded-lg border border-gray-200 dark:border-gray-700 overflow-x-auto" v-else>
                             <table
                                 class="w-full text-sm text-left text-gray-500 dark:text-gray-400 min-w-[500px] md:min-w-full">
                                 <thead
@@ -236,7 +294,7 @@
 <script setup>
 import { computed, ref, onUnmounted, nextTick } from 'vue'
 import axios from 'axios'
-import { Play, Square, FileText, Edit, Trash2, X, Loader2, Monitor, Timer, Hash, Table, RotateCw, Copy, GripHorizontal } from 'lucide-vue-next'
+import { Play, Square, FileText, Edit, Trash2, X, Loader2, Monitor, Timer, Hash, Table, RotateCw, Copy, GripHorizontal, Activity } from 'lucide-vue-next'
 
 const props = defineProps(['task'])
 const emit = defineEmits(['edit', 'delete', 'refresh', 'clone'])
@@ -267,6 +325,35 @@ const gpaData = computed(() => {
         return resultData.value.filter(item => item.matkul.includes('Indeks Prestasi'))
     }
     return []
+})
+
+const krsCourseStatus = computed(() => {
+    if (props.task.monitor_type !== 'krs') return []
+
+    let targets = []
+    try {
+        if (props.task.target_courses) {
+            targets = JSON.parse(props.task.target_courses)
+            if (!Array.isArray(targets)) targets = []
+        }
+    } catch (e) {
+        targets = []
+    }
+
+    const found = resultData.value && resultData.value.found ? resultData.value.found : []
+
+    return targets.map(course => ({
+        name: course,
+        found: found.includes(course)
+    }))
+})
+
+const hasDataDisplay = computed(() => {
+    if (props.task.monitor_type === 'krs') {
+        const t = props.task.target_courses
+        return t && t !== '[]' && t !== 'null'
+    }
+    return resultData.value && (resultData.value.nilai || (Array.isArray(resultData.value) && resultData.value.length > 0))
 })
 
 const statusClass = computed(() => {
@@ -326,6 +413,26 @@ const refreshData = async () => {
     }
 }
 
+const clearLogs = async () => {
+    if (!confirm('Clear all logs for this task?')) return
+    try {
+        await axios.delete(`${API_URL}/tasks/${props.task.id}/logs`)
+        refreshLogs()
+    } catch (e) {
+        alert('Failed to clear logs')
+    }
+}
+
+const clearData = async () => {
+    if (!confirm('Delete scraped data for this task?')) return
+    try {
+        await axios.delete(`${API_URL}/tasks/${props.task.id}/data`)
+        resultData.value = null
+    } catch (e) {
+        alert('Failed to clear data')
+    }
+}
+
 const closeLogs = () => {
     showingLogs.value = false
     if (logInterval) {
@@ -360,34 +467,3 @@ onUnmounted(() => {
     if (logInterval) clearInterval(logInterval)
 })
 </script>
-
-<style>
-.custom-scrollbar::-webkit-scrollbar {
-    width: 10px;
-}
-
-.custom-scrollbar::-webkit-scrollbar-track {
-    background: #f9fafb;
-}
-
-.custom-scrollbar::-webkit-scrollbar-thumb {
-    background: #d1d5db;
-    border-radius: 5px;
-}
-
-.custom-scrollbar::-webkit-scrollbar-thumb:hover {
-    background: #9ca3af;
-}
-
-.dark .custom-scrollbar::-webkit-scrollbar-track {
-    background: #1f2937;
-}
-
-.dark .custom-scrollbar::-webkit-scrollbar-thumb {
-    background: #4b5563;
-}
-
-.dark .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-    background: #6b7280;
-}
-</style>

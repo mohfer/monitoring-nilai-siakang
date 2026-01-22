@@ -17,8 +17,8 @@ class SiakangScraper:
         self.session.headers.update({
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
         })
-        self.url_login = os.getenv("URL_LOGIN", "https://siakang.untirta.ac.id/auth/login")
-        self.url_list_semester = os.getenv("URL_LIST_SEMESTER", "https://siakang.untirta.ac.id/dashboard/list-semester")
+        self.url_login = "https://siakang.untirta.ac.id/auth/login"
+        self.url_list_semester = "https://siakang.untirta.ac.id/dashboard/list-semester"
 
     def login(self):
         try:

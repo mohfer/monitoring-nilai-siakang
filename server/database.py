@@ -11,30 +11,47 @@ def init_db():
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
     c.execute('''CREATE TABLE IF NOT EXISTS tasks
-                 (id INTEGER PRIMARY KEY AUTOINCREMENT,
-                  name TEXT,
-                  login_id TEXT,
-                  password TEXT,
-                  chat_id TEXT,
-                  target_semester_code TEXT,
-                  interval INTEGER DEFAULT 300,
-                  status TEXT DEFAULT 'stopped', 
-                  pid INTEGER,
-                  position INTEGER DEFAULT 0)''')
-    ensure_position_column()
+                (id INTEGER PRIMARY KEY AUTOINCREMENT,
+                name TEXT,
+                login_id TEXT,
+                password TEXT,
+                chat_id TEXT,
+                target_semester_code TEXT,
+                interval INTEGER DEFAULT 300,
+                status TEXT DEFAULT 'stopped', 
+                pid INTEGER,
+                position INTEGER DEFAULT 0,
+                monitor_type TEXT DEFAULT 'nilai',
+                target_courses TEXT,
+                whatsapp_number TEXT)''')
+    upgrade_db()
     conn.commit()
     conn.close()
 
-def ensure_position_column():
+def upgrade_db():
     conn = get_db_connection()
     c = conn.cursor()
     c.execute("PRAGMA table_info(tasks)")
     columns = [info[1] for info in c.fetchall()]
+    
     if 'position' not in columns:
         print("Migrating database: Adding 'position' column...")
         c.execute("ALTER TABLE tasks ADD COLUMN position INTEGER DEFAULT 0")
         c.execute("UPDATE tasks SET position = id")
-        conn.commit()
+        
+    if 'monitor_type' not in columns:
+        print("Migrating database: Adding 'monitor_type' column...")
+        c.execute("ALTER TABLE tasks ADD COLUMN monitor_type TEXT DEFAULT 'nilai'")
+        
+    if 'target_courses' not in columns:
+        print("Migrating database: Adding 'target_courses' column...")
+        c.execute("ALTER TABLE tasks ADD COLUMN target_courses TEXT")
+
+    if 'whatsapp_number' not in columns:
+        print("Migrating database: Adding 'whatsapp_number' column...")
+        c.execute("ALTER TABLE tasks ADD COLUMN whatsapp_number TEXT")
+        
+    conn.commit()
     conn.close()
 
 def get_db_connection():

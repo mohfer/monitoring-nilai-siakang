@@ -1,9 +1,12 @@
 """
-Script Monitoring Nilai Siakang
--------------------------------
-Script ini memantau halaman nilai di Siakang Untirta secara berkala.
-Jika terdeteksi perubahan nilai (nilai baru keluar atau berubah),
-script akan mengirim notifikasi ke Telegram.
+Script Monitoring Siakang (Nilai & KRS)
+---------------------------------------
+Script ini memantau halaman Siakang Untirta secara berkala.
+Mendukung dua mode:
+1. Monitoring Nilai: Mengecek perubahan nilai atau nilai baru di halaman Hasil Studi.
+2. Monitoring KRS: Mengecek ketersediaan Mata Kuliah tertentu di halaman KRS (Livewire).
+
+Jika terdeteksi perubahan data yang relevan, script akan mengirim notifikasi ke Telegram.
 """
 
 import requests
@@ -16,6 +19,8 @@ from dotenv import load_dotenv
 import socket
 import builtins
 from datetime import datetime
+import re
+import html
 
 def print(*args, **kwargs):
     now = datetime.now().strftime("[%Y-%m-%d %H:%M:%S]")
@@ -27,18 +32,34 @@ if sys.platform == 'win32':
 
 load_dotenv()
 
-URL_LOGIN = os.getenv("URL_LOGIN")
-URL_TARGET = os.getenv("URL_TARGET")
-URL_LIST_SEMESTER = os.getenv("URL_LIST_SEMESTER")
+URL_LOGIN = "https://siakang.untirta.ac.id/auth/login"
+URL_TARGET = "https://siakang.untirta.ac.id/hasil-studi"
+URL_LIST_SEMESTER = "https://siakang.untirta.ac.id/dashboard/list-semester"
+
 LOGIN_ID = os.getenv("LOGIN_ID")
 PASSWORD = os.getenv("PASSWORD")
 
 TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN")
 CHAT_ID = os.getenv("CHAT_ID")
 
+WAHA_BASE_URL = os.getenv("WAHA_BASE_URL")
+WAHA_SESSION = os.getenv("WAHA_SESSION", "default")
+WAHA_API_KEY = os.getenv("WAHA_API_KEY")
+
+WHATSAPP_NUMBER = os.getenv("WHATSAPP_NUMBER")
+
 FILE_DATA = os.getenv("FILE_DATA")
 INTERVAL = int(os.getenv("INTERVAL", 300))
 TARGET_SEMESTER_CODE = os.getenv("TARGET_SEMESTER_CODE")
+
+MONITOR_TYPE = os.getenv("MONITOR_TYPE", "nilai")
+TARGET_COURSES_STR = os.getenv("TARGET_COURSES")
+try:
+    TARGET_COURSES = json.loads(TARGET_COURSES_STR) if TARGET_COURSES_STR else []
+except:
+    TARGET_COURSES = []
+
+URL_KRS = "https://siakang.untirta.ac.id/krs-mahasiswa"
 
 SELECTED_SEMESTER_URL = None
 
@@ -57,31 +78,80 @@ session.headers.update({
 def send_telegram(message):
     """
     Mengirim pesan teks ke bot Telegram yang dikonfigurasi.
-    
-    Args:
-        message (str): Isi pesan yang akan dikirim (format Markdown).
     """
+    if not TELEGRAM_TOKEN or not CHAT_ID:
+        return
+
     url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
     payload = {"chat_id": CHAT_ID, "text": message, "parse_mode": "Markdown"}
     
     for attempt in range(3):
         try:
             response = requests.post(url, json=payload, timeout=30)
-            
-            response.raise_for_status() 
-            return
-            
-        except requests.exceptions.Timeout:
-            print(f"⏳ Timeout pada percobaan {attempt+1}/3. Mencoba lagi...")
-        except requests.exceptions.ConnectionError:
-            print(f"🌐 Masalah koneksi/Reset pada percobaan {attempt+1}/3. Mencoba lagi...")
+            if response.status_code == 200:
+                return
+            if response.status_code >= 400 and response.status_code < 500:
+                print(f"⚠️ Telegram API Error: {response.text}")
+                return
         except Exception as e:
             print(f"⚠️ Gagal kirim Telegram (Percobaan {attempt+1}/3): {e}")
         
         if attempt < 2:
             time.sleep(5)
+
+def send_waha(message):
+    """
+    Mengirim pesan teks via WAHA (WhatsApp HTTP API).
+    """
+    if not WAHA_BASE_URL:
+        return
+        
+    target_number = WHATSAPP_NUMBER
+    if not target_number and CHAT_ID and CHAT_ID.isdigit():
+        target_number = CHAT_ID
+        
+    if not target_number:
+        return
+
+    wa_message = re.sub(r'\[(.*?)\]\((.*?)\)', r'\1 (\2)', message)
     
-    print("❌ Gagal kirim Telegram setelah 3 kali percobaan.")
+    target_number = str(target_number).strip()
+    
+    if '@' not in target_number:
+        sanitized = re.sub(r'[^0-9]', '', target_number)
+        if sanitized:
+            target_number = f"{sanitized}@c.us"
+    
+    url = f"{WAHA_BASE_URL}/api/sendText"
+    payload = {
+        "chatId": target_number,
+        "text": wa_message,
+        "session": WAHA_SESSION
+    }
+    
+    headers = {}
+    if WAHA_API_KEY:
+        headers["X-Api-Key"] = WAHA_API_KEY
+    
+    for attempt in range(3):
+        try:
+            response = requests.post(url, json=payload, headers=headers, timeout=30)
+            if response.status_code == 201 or response.status_code == 200:
+                return
+            print(f"⚠️ WAHA API Error: {response.text}")
+        except Exception as e:
+            print(f"⚠️ Gagal kirim WAHA (Percobaan {attempt+1}/3): {e}")
+        
+        if attempt < 2:
+            time.sleep(2)
+
+def send_notification(message):
+    """Wrapper untuk mengirim ke semua channel yang tersedia."""
+    if TELEGRAM_TOKEN and CHAT_ID:
+        send_telegram(message)
+    
+    if WAHA_BASE_URL and (WHATSAPP_NUMBER or (CHAT_ID and CHAT_ID.isdigit())):
+        send_waha(message)
 
 def do_login():
     """Melakukan proses login untuk mendapatkan session cookie."""
@@ -290,73 +360,292 @@ def get_data():
         print(f"❌ Error serius di get_data: {e}")
         return None
 
+def get_krs_data():
+    """Mengambil data ketersediaan matkul di halaman KRS."""
+    try:
+        print(f"🔄 Mengakses halaman KRS: {URL_KRS}")
+        res = session.get(URL_KRS)
+        
+        if res.status_code != 200:
+            print(f"⚠️ Gagal akses KRS: {res.status_code}")
+            return None
+
+        if "auth/login" in res.url:
+            print("⚠️ Sesi habis (Redirect ke login).")
+            if do_login():
+                res = session.get(URL_KRS)
+            else:
+                return None
+        
+        soup = BeautifulSoup(res.text, 'html.parser')
+        csrf_token = None
+        
+        script_csrf = soup.find('script', {'data-csrf': True})
+        if script_csrf:
+            csrf_token = script_csrf['data-csrf']
+        
+        if not csrf_token:
+            meta_csrf = soup.find('meta', {'name': 'csrf-token'})
+            if meta_csrf:
+                csrf_token = meta_csrf['content']
+
+        if not csrf_token:
+            input_csrf = soup.find('input', {'name': '_token'})
+            if input_csrf:
+                csrf_token = input_csrf['value']
+        
+        if not csrf_token:
+            print("⚠️ Gagal mendapatkan CSRF Token untuk request Livewire.")
+            return None
+
+        target_component_name = "rencana-studi.rencana-studi-index"
+        snapshot = None
+        component_id = None
+
+        tag_match = re.search(r'<[^>]+wire:snapshot="[^"]*rencana-studi\.rencana-studi-index[^"]*"[^>]*>', res.text)
+        
+        if tag_match:
+            full_tag = tag_match.group(0)
+            id_match = re.search(r'wire:id=["\']([^"\']+)["\']', full_tag)
+            if id_match:
+                component_id = id_match.group(1)
+            
+            snap_match = re.search(r'wire:snapshot=(["\'])(.*?)\1', full_tag)
+            if snap_match:
+                raw_snapshot = snap_match.group(2)
+                snapshot = html.unescape(raw_snapshot)
+        
+        if not snapshot or not component_id:
+            print(f"⚠️ Komponen Livewire '{target_component_name}' tidak ditemukan.")
+            return None
+
+        print(f"✅ Livewire Component Found: ID={component_id}")
+
+        if '"lazyIsolated":true' in snapshot or '"lazyLoaded":false' in snapshot:
+            print("💤 Component is Lazy Loaded. Waking it up...")
+            
+            lazy_params = []
+            x_intersect_match = re.search(r'x-intersect=["\']([^"\']+)["\']', full_tag)
+            if x_intersect_match:
+                x_val_raw = x_intersect_match.group(1)
+                x_val = html.unescape(x_val_raw)
+                lazy_arg_match = re.search(r"\$wire\.__lazyLoad\(['\"]([^'\"]+)['\"]\)", x_val)
+                if lazy_arg_match:
+                    lazy_params = [lazy_arg_match.group(1)]
+
+            hydrate_url = f"{res.url.split('/krs-mahasiswa')[0]}/livewire/update"
+            
+            headers = {
+                'X-Livewire': 'true',
+                'X-CSRF-TOKEN': csrf_token,
+                'Content-Type': 'application/json',
+                'User-Agent': session.headers['User-Agent']
+            }
+            
+            hydrate_payload = {
+                "_token": csrf_token,
+                "components": [
+                    {
+                        "snapshot": snapshot,
+                        "updates": {},
+                        "calls": [
+                            {
+                                "path": "",
+                                "method": "__lazyLoad",
+                                "params": lazy_params
+                            }
+                        ]
+                    }
+                ]
+            }
+            
+            try:
+                h_res = session.post(hydrate_url, json=hydrate_payload, headers=headers)
+                if h_res.status_code == 200:
+                    h_json = h_res.json()
+                    new_snapshot = h_json['components'][0].get('snapshot')
+                    if new_snapshot:
+                        snapshot = new_snapshot
+                        print("✅ Component hydrated! Snapshot updated.")
+                    else:
+                        print("⚠️ Hydration succeeded but no new snapshot returned.")
+                else:
+                    print(f"⚠️ Failed to hydrate lazy component ({h_res.status_code})")
+            except Exception as e:
+                print(f"⚠️ Error during hydration: {e}")
+
+        found_courses = []
+        
+        livewire_url = f"{res.url.split('/krs-mahasiswa')[0]}/livewire/update"
+        
+        headers = {
+            'X-Livewire': 'true',
+            'X-CSRF-TOKEN': csrf_token,
+            'Content-Type': 'application/json',
+            'Origin': 'https://siakang.untirta.ac.id',
+            'Referer': URL_KRS, 
+            'User-Agent': session.headers['User-Agent']
+        }
+
+        for course_name in TARGET_COURSES:
+            if not course_name: continue
+            
+            print(f"🔎 Mencari matkul: {course_name}...")
+            
+            payload = {
+                "_token": csrf_token,
+                "components": [
+                    {
+                        "snapshot": snapshot,
+                        "updates": {
+                            "search": course_name
+                        },
+                        "calls": []
+                    }
+                ]
+            }
+            
+            try:
+                p_res = session.post(livewire_url, json=payload, headers=headers)
+                
+                if p_res.status_code != 200:
+                    print(f"⚠️ Gagal search ({p_res.status_code})")
+                    if p_res.status_code == 419:
+                        print("⚠️ Token expired, re-login next loop.")
+                        break
+                    continue
+
+                try:
+                    resp_json = p_res.json()
+                    c_effects = resp_json.get('components', [{}])[0].get('effects', {})
+                    html_content = c_effects.get('html', '').lower()
+                    
+                    if course_name.lower() in html_content:
+                        print(f"✅ DITEMUKAN!")
+                        found_courses.append(course_name)
+                    
+                except json.JSONDecodeError:
+                        print("⚠️ Response bukan valid JSON")
+            
+            except Exception as e:
+                print(f"⚠️ Error during search request: {e}")
+            
+            time.sleep(1)
+
+        return {"found": found_courses}
+
+    except Exception as e:
+        print(f"❌ Error get_krs_data: {e}")
+        return None
+
 def monitor():
     """
     Loop utama monitoring.
     1. Login ke sistem.
-    2. Pilih semester (User Input) -> Set SELECTED_SEMESTER_URL.
-    3. Cek data nilai secara berkala (sesuai INTERVAL).
-    4. Bandingkan dengan data lama (last_values.json).
-    5. Kirim notifikasi jika ada perubahan.
+    2. Cek tipe monitoring (Nilai / KRS).
+    3. Jalankan loop sesuai tipe.
     """
     global SELECTED_SEMESTER_URL
     
     run_once = "--run-once" in sys.argv
-    print(f"🚀 Monitoring Siakang Dimulai... {'(Mode Sekali Jalan)' if run_once else ''}")
+    MONITOR_TEXT = "KRS" if MONITOR_TYPE == 'krs' else "NILAI"
+    print(f"🚀 Monitoring Siakang ({MONITOR_TEXT}) Dimulai... {'(Mode Sekali Jalan)' if run_once else ''}")
     
-    SELECTED_SEMESTER_TITLE = ""
-
     if not do_login():
         print("❌ Login awal gagal. Hentikan script.")
         return
 
+    SELECTED_SEMESTER_TITLE = ""
     semesters = get_all_semesters()
-    if not semesters:
-        print("❌ Tidak dapat menemukan daftar semester. Menggunakan default sistem.")
-    else:
+    
+    if semesters:
         selected = None
-        
         if TARGET_SEMESTER_CODE:
             print(f"⚙️ Mencari semester dengan kode konfigurasi: {TARGET_SEMESTER_CODE}")
             for sem in semesters:
                 if sem['code'] == TARGET_SEMESTER_CODE:
                     selected = sem
                     break
-            
             if not selected:
-                print(f"❌ Semester dengan kode '{TARGET_SEMESTER_CODE}' tidak ditemukan dalam daftar.")
+                print(f"❌ Semester dengan kode '{TARGET_SEMESTER_CODE}' tidak ditemukan. Menggunakan default.")
         
-        if not selected:
-            print("\n📋 Daftar Semester Tersedia:")
-            for idx, sem in enumerate(semesters):
-                print(f"{idx+1}. {sem['title']} (Kode: {sem['code']})")
-                
-            while True:
-                try:
-                    choice = int(input("\n👉 Pilih nomor semester yang ingin dipantau: "))
-                    if 1 <= choice <= len(semesters):
-                        selected = semesters[choice-1]
-                        break
-                    else:
-                        print("🚫 Pilihan tidak valid.")
-                except ValueError:
-                    print("🚫 Masukkan angka.")
         
         if selected:
             SELECTED_SEMESTER_URL = selected['url']
             SELECTED_SEMESTER_TITLE = selected['title']
-            print(f"✅ Memilih: {selected['title']}")
+            print(f"✅ Memilih Semester: {selected['title']}")
             print("🔄 Mengaktifkan semester...")
             session.get(SELECTED_SEMESTER_URL)
+            time.sleep(1)
+        else:
+            print("ℹ️ Menggunakan semester aktif saat ini (tidak ada perubahan).")
 
+    if MONITOR_TYPE == 'krs':
+        print(f"📋 Target Matkul ({len(TARGET_COURSES)}): {', '.join(TARGET_COURSES)}")
+        if not TARGET_COURSES:
+            print("⚠️ Tidak ada matkul yang ditargetkan! Pastikan konfigurasi 'Target Courses' diisi.")
+
+        if not run_once:
+            send_notification(f"🤖 Bot Monitoring KRS Aktif!\nMemantau: {', '.join(TARGET_COURSES)}")
+
+        while True:
+            try:
+                data = get_krs_data() 
+                next_check = time.strftime('%H:%M:%S', time.localtime(time.time() + INTERVAL))
+                
+                if data:
+                    current_found = set(data['found'])
+                    
+                    old_found = set()
+                    if os.path.exists(FILE_DATA):
+                        try:
+                            with open(FILE_DATA, "r") as f:
+                                old_data = json.load(f)
+                                if isinstance(old_data, dict):
+                                    old_found = set(old_data.get('found', []))
+                        except Exception:
+                            pass
+                    
+                    newly_found = current_found - old_found
+                    
+                    if newly_found:
+                        msg = "🔔 *MATKUL DITEMUKAN DI KRS!*\n"
+                        for course in newly_found:
+                            msg += f"✅ {course}\n"
+                        msg += f"\nCek segera di: [KRS Online]({URL_KRS})"
+                        send_notification(msg)
+                        print(f"✅ Ditemukan {len(newly_found)} matkul baru yang sebelumnya tidak ada.")
+                    
+                    lost_found = old_found - current_found
+                    if lost_found:
+                        print(f"ℹ️ Matkul hilang dari pencarian: {', '.join(lost_found)}")
+
+                    print(f"📊 Status: {len(current_found)}/{len(TARGET_COURSES)} matkul ditemukan. (Next: {next_check})")
+                    
+                    with open(FILE_DATA, "w") as f:
+                        json.dump({"found": list(current_found)}, f)
+                else:
+                    print(f"⚠️ Gagal mendapatkan data KRS. (Next: {next_check})")
+                
+            except Exception as e:
+                print(f"❌ Error loop KRS: {e}")
+                import traceback
+                traceback.print_exc()
+            
+            if run_once: break
+            time.sleep(INTERVAL)
+        return
+
+    if not semesters:
+        print("❌ Tidak dapat menemukan daftar semester. Menggunakan default sistem.")
+    
     if not run_once:
-        send_telegram("🤖 Bot Monitoring Siakang Aktif!") 
+        send_notification("🤖 Bot Monitoring Siakang (Nilai) Aktif!") 
 
     while True:
         old_data = None
         try:
             current_data = get_data()
-            
             next_check = time.strftime('%H:%M:%S', time.localtime(time.time() + INTERVAL))
             
             if not current_data:
@@ -370,9 +659,9 @@ def monitor():
                 
                 old_courses = []
                 if isinstance(old_data, list):
-                     old_courses = old_data
+                    old_courses = old_data
                 elif isinstance(old_data, dict):
-                     old_courses = old_data.get('nilai', [])
+                    old_courses = old_data.get('nilai', [])
 
                 current_courses = current_data.get('nilai', [])
 
@@ -396,7 +685,7 @@ def monitor():
 
                 if changes:
                     for change in changes:
-                        send_telegram(change)
+                        send_notification(change)
                     print(f"✅ Terdeteksi {len(changes)} perubahan nilai! (Cek lagi: {next_check})")
                 else:
                     print(f"😴 Tidak ada perubahan. (Terakhir: {time.strftime('%H:%M:%S')} | Berikutnya: {next_check})")
@@ -407,10 +696,10 @@ def monitor():
                 
                 was_complete = False
                 if old_data:
-                     old_courses = old_data if isinstance(old_data, list) else old_data.get('nilai', [])
-                     was_complete = all(d['nilai'] != "---" for d in old_courses)
-                
-                if is_complete and not was_complete:
+                    old_c = old_data if isinstance(old_data, list) else old_data.get('nilai', [])
+                    was_complete = all(d['nilai'] != "---" for d in old_c)
+            
+                if is_complete and not was_complete and len(current_courses) > 0:
                     semester_info = f"🎓 *{SELECTED_SEMESTER_TITLE}*\n\n" if SELECTED_SEMESTER_TITLE else ""
                     msg_complete = (f"🎉 *SEMUA NILAI SUDAH KELUAR!*\n"
                                     f"{semester_info}"
@@ -418,7 +707,7 @@ def monitor():
                                     f"📈 *IPS:* {current_data.get('ips')} | *IPK:* {current_data.get('ipk')}\n"
                                     f"Silakan cek portal Siakang untuk detail lengkap.\n"
                                     f"[Login Siakang]({URL_TARGET})")
-                    send_telegram(msg_complete)
+                    send_notification(msg_complete)
                     print("✅ Notifikasi semua nilai keluar telah dikirim!")
 
             if current_data:
