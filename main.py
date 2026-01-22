@@ -612,6 +612,10 @@ def monitor():
                         msg = "🔔 *MATKUL DITEMUKAN DI KRS!*\n"
                         for course in newly_found:
                             msg += f"✅ {course}\n"
+                        
+                        if len(current_found) >= len(TARGET_COURSES) and len(TARGET_COURSES) > 0:
+                             msg += "\n🎉 *SEMUA MATKUL INCARAN LENGKAP!* 💯\nSegera 'Ambil' sekarang sebelum habis!\n"
+
                         msg += f"\nCek segera di: [KRS Online]({URL_KRS})"
                         send_notification(msg)
                         print(f"✅ Ditemukan {len(newly_found)} matkul baru yang sebelumnya tidak ada.")
