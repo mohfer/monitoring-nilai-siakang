@@ -520,7 +520,9 @@ def get_krs_data():
                     c_effects = resp_json.get('components', [{}])[0].get('effects', {})
                     html_content = c_effects.get('html', '').lower()
                     
-                    if course_name.lower() in html_content:
+                    decoded_html = html.unescape(html_content)
+
+                    if course_name.lower() in decoded_html:
                         print(f"✅ DITEMUKAN!")
                         found_courses.append(course_name)
                     
