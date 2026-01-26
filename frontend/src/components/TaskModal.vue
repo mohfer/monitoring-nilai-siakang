@@ -58,33 +58,55 @@
                         </div>
                     </div>
 
-                    <div
-                        class="bg-gray-50 dark:bg-gray-700/30 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
+                    <div class="pt-2">
                         <label
-                            class="block text-sm font-semibold text-gray-700 dark:text-gray-200 mb-3 flex items-center gap-2">
-                            <span class="bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300 p-1 rounded">
-                                Notification Channels
-                            </span>
+                            class="block text-sm font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2 border-b border-gray-100 dark:border-gray-700 pb-2">
+                            <Bell :size="18" class="text-blue-600 dark:text-blue-500" />
+                            Notifications
                         </label>
-                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
                             <div>
-                                <label
-                                    class="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1 flex items-center gap-1">
+                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                                     Telegram Chat ID
-                                    <a href="https://t.me/userinfobot" target="_blank"
-                                        class="text-blue-500 hover:underline">(Find)</a>
                                 </label>
-                                <input v-model="form.chat_id" class="input-field text-sm" placeholder="123456789" />
+                                <div class="relative group">
+                                    <input v-model="form.chat_id" class="input-field pl-10" placeholder="123456789" />
+                                </div>
+                                <a href="https://t.me/userinfobot" target="_blank"
+                                    class="text-xs text-blue-500 hover:text-blue-600 dark:text-blue-400 hover:underline mt-1.5 inline-flex items-center gap-1">
+                                    Find ID
+                                    <ExternalLink :size="10" />
+                                </a>
                             </div>
+
                             <div>
-                                <label class="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
-                                    WhatsApp Number / Group ID
+                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                    WhatsApp Number
                                 </label>
-                                <input v-model="form.whatsapp_number" class="input-field text-sm"
-                                    placeholder="628... or 123...@g.us" />
+                                <div class="relative group">
+                                    <input v-model="form.whatsapp_number" class="input-field pl-10"
+                                        placeholder="628... or Group ID" />
+                                </div>
+                                <div class="flex justify-between items-center mt-1.5">
+                                    <p class="text-xs text-gray-400 dark:text-gray-500">
+                                        Number (628...)
+                                    </p>
+                                    <a href="https://waha.devlike.pro/swagger/#/%F0%9F%91%A5%20Groups/GroupsController_getGroups"
+                                        target="_blank"
+                                        class="text-xs text-blue-500 hover:text-blue-600 dark:text-blue-400 hover:underline inline-flex items-center gap-1">
+                                        Find Group ID
+                                        <ExternalLink :size="10" />
+                                    </a>
+                                </div>
                             </div>
                         </div>
-                        <p class="text-xs text-gray-500 mt-2 italic">* Fill at least one to receive notifications.</p>
+
+                        <div v-if="!form.chat_id && !form.whatsapp_number"
+                            class="mt-3 flex items-start gap-2 text-xs text-amber-600 dark:text-amber-500 bg-amber-50 dark:bg-amber-900/20 p-2.5 rounded-lg border border-amber-100 dark:border-amber-900/30">
+                            <AlertCircle :size="14" class="mt-0.5 shrink-0" />
+                            <span>Required: Please fill at least one channel to receive alerts.</span>
+                        </div>
                     </div>
 
                     <div v-if="form.monitor_type === 'krs'">
@@ -150,7 +172,7 @@
 <script setup>
 import { ref, watch } from 'vue'
 import axios from 'axios'
-import { X, Save, Edit3, Plus, HelpCircle, Eye, EyeOff, RefreshCw, ChevronDown } from 'lucide-vue-next'
+import { X, Save, Edit3, Plus, HelpCircle, Eye, EyeOff, RefreshCw, ChevronDown, Bell, Send, MessageCircle, AlertCircle, ExternalLink } from 'lucide-vue-next'
 
 const props = defineProps(['task'])
 const emit = defineEmits(['close', 'save'])

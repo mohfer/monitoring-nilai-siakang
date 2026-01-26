@@ -1,12 +1,12 @@
 """
-Script Monitoring Siakang (Nilai & KRS)
+Script Monitoring Akademik Siakang
 ---------------------------------------
 Script ini memantau halaman Siakang Untirta secara berkala.
 Mendukung dua mode:
 1. Monitoring Nilai: Mengecek perubahan nilai atau nilai baru di halaman Hasil Studi.
 2. Monitoring KRS: Mengecek ketersediaan Mata Kuliah tertentu di halaman KRS (Livewire).
 
-Jika terdeteksi perubahan data yang relevan, script akan mengirim notifikasi ke Telegram.
+Jika terdeteksi perubahan data yang relevan, script akan mengirim notifikasi ke Telegram dan WhatsApp.
 """
 
 import requests
@@ -518,11 +518,10 @@ def get_krs_data():
                 try:
                     resp_json = p_res.json()
                     c_effects = resp_json.get('components', [{}])[0].get('effects', {})
-                    html_content = c_effects.get('html', '').lower()
-                    
+                    html_content = c_effects.get('html', '')
                     decoded_html = html.unescape(html_content)
 
-                    if course_name.lower() in decoded_html:
+                    if course_name.lower() in decoded_html.lower():
                         print(f"✅ DITEMUKAN!")
                         found_courses.append(course_name)
                     
@@ -551,7 +550,7 @@ def monitor():
     
     run_once = "--run-once" in sys.argv
     MONITOR_TEXT = "KRS" if MONITOR_TYPE == 'krs' else "NILAI"
-    print(f"🚀 Monitoring Siakang ({MONITOR_TEXT}) Dimulai... {'(Mode Sekali Jalan)' if run_once else ''}")
+    print(f"🚀 Monitoring Akademik Siakang ({MONITOR_TEXT}) Dimulai... {'(Mode Sekali Jalan)' if run_once else ''}")
     
     if not do_login():
         print("❌ Login awal gagal. Hentikan script.")
@@ -646,7 +645,7 @@ def monitor():
         print("❌ Tidak dapat menemukan daftar semester. Menggunakan default sistem.")
     
     if not run_once:
-        send_notification("🤖 Bot Monitoring Siakang (Nilai) Aktif!") 
+        send_notification("🤖 Bot Monitoring Akademik Siakang Aktif!") 
 
     while True:
         old_data = None

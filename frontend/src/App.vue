@@ -6,7 +6,7 @@
                 <div>
                     <h1 class="text-2xl md:text-3xl font-bold text-gray-800 dark:text-white flex items-center gap-3">
                         <LayoutDashboard :size="32" class="text-blue-600 dark:text-blue-400" />
-                        Siakang Monitor Dashboard
+                        Monitoring Akademik Siakang
                     </h1>
                     <p class="text-gray-500 dark:text-gray-400 mt-1 ml-1">Manage your scraping instances</p>
                 </div>

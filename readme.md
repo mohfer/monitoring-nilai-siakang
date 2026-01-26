@@ -1,13 +1,16 @@
-# Monitoring Nilai & KRS Siakang
+# Monitoring Akademik Siakang
 
-Aplikasi monitoring akademik **Siakang Untirta** berbasis web yang robust dan modern. Kini mendukung pemantauan **Nilai** dan status **Matkul KRS** secara real-time. Memungkinkan Anda memantau banyak akun mahasiswa sekaligus, mengirim notifikasi ke **Telegram** & **WhatsApp**, dan menyediakan dashboard interaktif.
+Aplikasi monitoring akademik **Siakang Untirta** berbasis web yang robust dan modern. Pantau aktivitas akademik secara real-time dengan notifikasi multi-channel ke **Telegram** & **WhatsApp** melalui dashboard interaktif.
 
 ## ✨ Fitur Utama
 
-- 🖥️ **Web Dashboard Modern**: Antarmuka Vue.js responsif dengan Dark Mode.
 - 🔄 **Dual Monitoring Mode**:
   - **Monitor Nilai**: Pantau nilai baru, perubahan nilai, IP, dan IPK.
-  - **Monitor KRS**: Pantau ketersediaan slot/kelas Matkul incaran saat masa KRS (Livewire Support).
+  - **Monitor KRS**: Pantau ketersediaan Matkul incaran saat masa KRS (Livewire Support).
+
+## 🛠️ Fitur Pendukung
+
+- 🖥️ **Web Dashboard Modern**: Antarmuka Vue.js responsif dengan Dark Mode.
 - 📲 **Multi-Channel Notification**: Mendukung **Telegram Bot** dan **WhatsApp** (via WAHA) untuk notifikasi instan.
 - 👥 **Multi-Account & Group Support**: Pantau banyak akun sekaligus. Notifikasi WA bisa dikirim ke **Grup WhatsApp**.
 - 🖱️ **Smart Reordering**: Atur urutan prioritas monitoring dengan drag & drop yang cerdas per kategori.
@@ -15,7 +18,7 @@ Aplikasi monitoring akademik **Siakang Untirta** berbasis web yang robust dan mo
 - 📊 **Visual Data Viewer**:
   - **Nilai**: Lihat transkrip sementara, Mutu, SKS di tabel rapi.
   - **KRS**: Indikator warna (Hijau/Merah) untuk status matkul target (Found/Missing).
-- 🛠️ **Full Control**: Start/Stop monitoring, lihat Live Logs, hapus Logs, dan Reset Data scraping langsung dari UI.
+- 🔧 **Full Control**: Start/Stop monitoring, lihat Live Logs, hapus Logs, dan Reset Data scraping langsung dari UI.
 - 🐳 **Docker Ready**: Deployment mudah dengan isolasi environment penuh.
 
 ## 🚀 Cara Install & Penggunaan
@@ -25,8 +28,8 @@ Aplikasi monitoring akademik **Siakang Untirta** berbasis web yang robust dan mo
 1. **Clone Repository**
 
    ```bash
-   git clone https://github.com/mohfer/monitoring-nilai-siakang
-   cd monitoring-nilai-siakang
+   git clone https://github.com/mohfer/monitoring-akademik-siakang
+   cd monitoring-akademik-siakang
    ```
 
 2. **Setup Environment Variable**
@@ -37,9 +40,12 @@ Aplikasi monitoring akademik **Siakang Untirta** berbasis web yang robust dan mo
    ```
 
    Isi konfigurasi di dalamnya:
-   - `TELEGRAM_TOKEN`: Token bot Telegram (jika pakai).
-   - `WAHA_BASE_URL`: URL server WAHA Anda (opsional, untuk WhatsApp).
-   - `WAHA_API_KEY`: API Key WAHA (jika ada).
+   - `TELEGRAM_TOKEN`: Token bot Telegram Anda (optional).
+   - `WAHA_BASE_URL`: URL server WAHA (optional, untuk WhatsApp). **WAHA adalah service eksternal** yang perlu di-setup terpisah. Lihat [dokumentasi WAHA](https://waha.devlike.pro/) untuk instalasi.
+   - `WAHA_SESSION`: Nama session WAHA (default: `default`).
+   - `WAHA_API_KEY`: API Key WAHA jika server Anda menggunakan autentikasi.
+
+   **Note**: Minimal isi salah satu dari `TELEGRAM_TOKEN` atau `WAHA_BASE_URL` untuk menerima notifikasi.
 
 3. **Jalankan Aplikasi**
    ```bash
@@ -53,7 +59,10 @@ Aplikasi monitoring akademik **Siakang Untirta** berbasis web yang robust dan mo
 
 #### 1. Setup Backend
 
+Salin `.env.example` ke `.env` dan konfigurasikan.
+
 ```bash
+cp .env.example .env
 python -m venv .venv
 # Activate venv (Windows: .venv\Scripts\activate | Linux: source .venv/bin/activate)
 pip install -r requirements.txt
@@ -78,7 +87,7 @@ npm run dev
 4. **Notifikasi**:
    - Isi **Telegram Chat ID** untuk notifikasi ke Telegram Personal.
    - Isi **WhatsApp Number** (misal: `62812xxx`) atau **Group ID** (misal: `123...@g.us`) untuk notifikasi WA.
-   - _Tips: Cek **Group ID** di Dashboard WAHA Anda (Swagger UI) pada menu **Groups > getGroups**._
+   - _Tips: Cek **Group ID** di [Dokumentasi WAHA](https://waha.devlike.pro/swagger/#/%F0%9F%91%A5%20Groups/GroupsController_getGroups)._
 5. **Konfigurasi Khusus**:
    - **Mode Nilai**: Klik "Fetch" Semester dan pilih semester aktif.
    - **Mode KRS**: Masukkan nama-nama matkul target (satu per baris) di kolom "Target Courses".
