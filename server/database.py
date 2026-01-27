@@ -1,3 +1,13 @@
+"""Database module untuk SQLite task management.
+
+Module ini menangani:
+- Inisialisasi database SQLite
+- Schema creation dan migration
+- Connection management
+
+Database path: data/db/tasks.db
+"""
+
 import sqlite3
 import os
 from pydantic import BaseModel

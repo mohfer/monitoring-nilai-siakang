@@ -1,8 +1,22 @@
+"""FastAPI server untuk Monitoring Akademik Siakang.
+
+API ini menyediakan endpoints untuk:
+- CRUD operations untuk task monitoring
+- Start/Stop monitoring processes
+- View logs dan data hasil scraping
+- Validasi login dan fetch semester
+
+Server ini menggunakan:
+- FastAPI untuk REST API
+- SQLite untuk persistence
+- Subprocess untuk menjalankan worker process
+"""
+
 from fastapi import FastAPI, HTTPException, Body
 from fastapi.middleware.cors import CORSMiddleware
 from .database import init_db, get_db_connection
 from .models import TaskCreate, TaskUpdate, TaskResponse, ApiResponse
-from .manager import start_process, stop_process, get_logs, restore_running_tasks, get_last_values, cleanup_task_files, run_process_once, clear_logs, clear_data
+from .manager import start_process, stop_process, get_logs, restore_running_tasks, get_last_values, cleanup_task_files, run_process_once, clear_logs, clear_data, check_process_status
 from typing import List
 import sys
 import os
@@ -33,6 +47,16 @@ def list_tasks():
     conn = get_db_connection()
     tasks = conn.execute('SELECT * FROM tasks ORDER BY position ASC, id ASC').fetchall()
     conn.close()
+    
+    task_list = [dict(t) for t in tasks]
+    for task in task_list:
+        if task['status'] == 'running':
+            check_process_status(task['id'])
+    
+    conn = get_db_connection()
+    tasks = conn.execute('SELECT * FROM tasks ORDER BY position ASC, id ASC').fetchall()
+    conn.close()
+    
     return ApiResponse(code=200, message="Success", data=[dict(t) for t in tasks])
 
 @app.put("/tasks/reorder", response_model=ApiResponse[None])

@@ -1,7 +1,23 @@
+"""Scraper Library untuk Siakang Untirta.
+
+Library ini menyediakan class SiakangScraper untuk interaksi dengan sistem Siakang.
+
+Fungsi Utama:
+- Login ke sistem Siakang Untirta dengan validasi kredensial
+- Mengambil daftar semester yang tersedia dengan pagination support
+
+Fitur:
+- Session Management: Mengelola cookie dan session login
+- IPv4 Enforcement: Memaksa koneksi menggunakan IPv4 untuk menghindari timeout
+- Pagination Support: Mendukung pengambilan data dari multiple pages
+
+Digunakan oleh:
+- server/main.py: Untuk validasi login dan fetch semester di API endpoint
+- main.py: Socket patch dijalankan saat import untuk memperbaiki koneksi
+"""
+
 import requests
 from bs4 import BeautifulSoup
-import time
-import os
 import socket
 
 orig_getaddrinfo = socket.getaddrinfo
@@ -46,6 +62,11 @@ class SiakangScraper:
             return False, str(e)
 
     def get_semesters(self):
+        """Mengambil semua daftar semester dengan pagination support.
+        
+        Returns:
+            list: List of dict dengan keys 'title', 'code', dan 'url'
+        """
         semesters = []
         current_url = self.url_list_semester
         
@@ -66,9 +87,15 @@ class SiakangScraper:
                     code_elm = card.find('p', class_='card-text')
                     code = code_elm.get_text(strip=True).replace("Kode Semester #", "") if code_elm else ""
                     
+                    link_elm = card.find('a', class_='btn-primary')
+                    url = link_elm['href'] if link_elm else None
                     
                     if title and code:
-                        semesters.append({'title': title, 'code': code})
+                        semesters.append({
+                            'title': title,
+                            'code': code,
+                            'url': url
+                        })
 
                 next_link = soup.find('a', rel='next')
                 if next_link and next_link.has_attr('href'):

@@ -1,12 +1,17 @@
-"""
-Script Monitoring Akademik Siakang
----------------------------------------
-Script ini memantau halaman Siakang Untirta secara berkala.
-Mendukung dua mode:
-1. Monitoring Nilai: Mengecek perubahan nilai atau nilai baru di halaman Hasil Studi.
-2. Monitoring KRS: Mengecek ketersediaan Mata Kuliah tertentu di halaman KRS (Livewire).
+"""Script Worker untuk Monitoring Akademik Siakang.
 
-Jika terdeteksi perubahan data yang relevan, script akan mengirim notifikasi ke Telegram dan WhatsApp.
+Script ini berjalan sebagai subprocess dan memantau halaman Siakang Untirta secara berkala.
+
+Mode Monitoring:
+- Monitoring Nilai: Mengecek perubahan nilai atau nilai baru di halaman Hasil Studi
+- Monitoring KRS: Mengecek ketersediaan Mata Kuliah tertentu di halaman KRS (Livewire)
+
+Notifikasi:
+- Telegram: Menggunakan Bot API dengan Markdown formatting
+- WhatsApp: Menggunakan WAHA (WhatsApp HTTP API)
+
+Konfigurasi melalui Environment Variables yang diinjeksi oleh server/manager.py.
+Script ini didesain untuk dijalankan standalone atau via subprocess.
 """
 
 import requests
@@ -16,11 +21,11 @@ import json
 import os
 import sys
 from dotenv import load_dotenv
-import socket
 import builtins
 from datetime import datetime
 import re
 import html
+import scraper_lib
 
 def print(*args, **kwargs):
     now = datetime.now().strftime("[%Y-%m-%d %H:%M:%S]")
@@ -62,13 +67,6 @@ except:
 URL_KRS = "https://siakang.untirta.ac.id/krs-mahasiswa"
 
 SELECTED_SEMESTER_URL = None
-
-orig_getaddrinfo = socket.getaddrinfo
-
-def getaddrinfo_ipv4(host, port, family=0, type=0, proto=0, flags=0):
-    return orig_getaddrinfo(host, port, socket.AF_INET, type, proto, flags)
-
-socket.getaddrinfo = getaddrinfo_ipv4
 
 session = requests.Session()
 session.headers.update({

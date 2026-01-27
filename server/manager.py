@@ -1,3 +1,15 @@
+"""Process Manager untuk Worker Subprocess.
+
+Module ini mengelola lifecycle worker process:
+- Start/Stop subprocess monitoring
+- Process status monitoring
+- Log management
+- Data file cleanup
+
+Worker process dijalankan dengan environment variable injection.
+Setiap task dijalankan sebagai subprocess terpisah dari main.py.
+"""
+
 import subprocess
 import os
 import sys
@@ -114,6 +126,45 @@ def stop_process(task_id: int):
     conn.commit()
     conn.close()
     return True, "Stopped"
+
+def check_process_status(task_id: int):
+    """Check if process is still alive and update DB if dead."""
+    proc = active_processes.get(task_id)
+    
+    if proc and proc.poll() is not None:
+        del active_processes[task_id]
+        conn = get_db_connection()
+        conn.execute('UPDATE tasks SET status = ?, pid = NULL WHERE id = ?', ('stopped', task_id))
+        conn.commit()
+        conn.close()
+        return False
+    
+    if not proc:
+        conn = get_db_connection()
+        task = conn.execute('SELECT pid, status FROM tasks WHERE id = ?', (task_id,)).fetchone()
+        conn.close()
+        
+        if task and task['status'] == 'running' and task['pid']:
+            try:
+                if os.name == 'nt':
+                    result = subprocess.run(['tasklist', '/FI', f'PID eq {task["pid"]}'], 
+                                        capture_output=True, text=True, timeout=2)
+                    if str(task['pid']) not in result.stdout:
+                        conn = get_db_connection()
+                        conn.execute('UPDATE tasks SET status = ?, pid = NULL WHERE id = ?', ('stopped', task_id))
+                        conn.commit()
+                        conn.close()
+                        return False
+                else:
+                    os.kill(task['pid'], 0)
+            except (ProcessLookupError, subprocess.TimeoutExpired, PermissionError):
+                conn = get_db_connection()
+                conn.execute('UPDATE tasks SET status = ?, pid = NULL WHERE id = ?', ('stopped', task_id))
+                conn.commit()
+                conn.close()
+                return False
+    
+    return True
 
 def get_logs(task_id: int):
     log_path = os.path.join(os.path.dirname(SCRIPT_PATH), "data", "logs", f"task_{task_id}.log")

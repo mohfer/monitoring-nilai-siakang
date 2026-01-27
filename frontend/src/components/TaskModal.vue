@@ -172,7 +172,7 @@
 <script setup>
 import { ref, watch } from 'vue'
 import axios from 'axios'
-import { X, Save, Edit3, Plus, HelpCircle, Eye, EyeOff, RefreshCw, ChevronDown, Bell, Send, MessageCircle, AlertCircle, ExternalLink } from 'lucide-vue-next'
+import { X, Save, Edit3, Plus, Eye, EyeOff, RefreshCw, ChevronDown, Bell, AlertCircle, ExternalLink } from 'lucide-vue-next'
 
 const props = defineProps(['task'])
 const emit = defineEmits(['close', 'save'])

@@ -153,6 +153,7 @@ const cloneTask = async (task) => {
         login_id: task.login_id,
         password: task.password,
         chat_id: task.chat_id,
+        whatsapp_number: task.whatsapp_number,
         target_semester_code: task.target_semester_code,
         monitor_type: task.monitor_type,
         target_courses: task.target_courses,
