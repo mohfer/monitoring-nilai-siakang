@@ -117,14 +117,15 @@
                         </button>
                     </div>
                 </div>
-                <div class="flex-grow relative bg-gray-950">
+                <div class="flex-grow relative bg-gray-50 dark:bg-gray-950">
                     <div class="absolute inset-0 overflow-auto p-4 custom-scrollbar" ref="logContainer">
                         <div v-if="logs === 'Loading...'"
                             class="flex items-center justify-center h-full text-gray-500 gap-2">
                             <Loader2 :size="24" class="animate-spin" /> Loading logs...
                         </div>
                         <pre v-else
-                            class="font-mono text-xs sm:text-sm text-green-400 whitespace-pre-wrap leading-relaxed">{{ logs }}</pre>
+                            class="font-mono text-xs sm:text-sm text-gray-900 dark:text-gray-100 whitespace-pre-wrap leading-relaxed"
+                            v-html="formattedLogs"></pre>
                     </div>
                 </div>
                 <div
@@ -307,6 +308,62 @@ const resultData = ref(null)
 const logContainer = ref(null)
 const API_URL = '/api'
 let logInterval = null
+
+const formattedLogs = computed(() => {
+    if (!logs.value || logs.value === 'Loading...') return logs.value
+
+    let text = logs.value
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+
+    const colorMap = {
+        '30': '#1a1a1a', '31': '#ef4444', '32': '#22c55e', '33': '#eab308',
+        '34': '#3b82f6', '35': '#ec4899', '36': '#06b6d4', '37': '#d1d5db',
+        '90': '#6b7280', '91': '#f87171', '92': '#4ade80', '93': '#facc15',
+        '94': '#60a5fa', '95': '#f472b6', '96': '#22d3ee', '97': '#f3f4f6'
+    }
+
+    text = text.replace(/\x1b\[([0-9;]+)m/g, (match, codes) => {
+        if (codes === '0') return '</span>'
+        const codeList = codes.split(';')
+        const styles = []
+        for (const code of codeList) {
+            if (colorMap[code]) styles.push(`color: ${colorMap[code]}`)
+            if (code === '1') styles.push('font-weight: bold')
+        }
+        return styles.length > 0 ? `<span style="${styles.join('; ')}">` : ''
+    })
+
+    const tagColors = {
+        '\\[ERROR\\]': 'color: #ef4444; font-weight: bold',
+        '\\[SUCCESS\\]': 'color: #22c55e; font-weight: bold',
+        '\\[WARNING\\]': 'color: #eab308; font-weight: bold',
+        '\\[INFO\\]': 'color: #06b6d4; font-weight: bold',
+        '\\[STATUS\\]': 'color: #3b82f6; font-weight: bold',
+        '\\[ALERT\\]': 'color: #ec4899; font-weight: bold',
+        '\\[COMPLETE\\]': 'color: #22c55e; font-weight: bold',
+        '\\[UPDATE\\]': 'color: #06b6d4; font-weight: bold',
+        '\\[GAGAL\\]': 'color: #ef4444; font-weight: bold',
+        '\\[SUKSES\\]': 'color: #22c55e; font-weight: bold',
+        '\\[PERINGATAN\\]': 'color: #eab308; font-weight: bold'
+    }
+
+    for (const [tag, style] of Object.entries(tagColors)) {
+        const regex = new RegExp(`(?<!<span[^>]*>)${tag}(?![^<]*<\\/span>)`, 'g')
+        text = text.replace(regex, (match) => {
+            return `<span style="${style}">${match}</span>`
+        })
+    }
+
+    const openCount = (text.match(/<span/g) || []).length
+    const closeCount = (text.match(/<\/span>/g) || []).length
+    if (openCount > closeCount) {
+        text += '</span>'.repeat(openCount - closeCount)
+    }
+
+    return text
+})
 
 const courseData = computed(() => {
     if (!resultData.value || !resultData.value.nilai) return []

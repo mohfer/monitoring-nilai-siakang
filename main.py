@@ -26,10 +26,34 @@ from datetime import datetime
 import re
 import html
 import scraper_lib
+from colorama import Fore, Style, init
+
+init(autoreset=True)
 
 def print(*args, **kwargs):
     now = datetime.now().strftime("[%Y-%m-%d %H:%M:%S]")
-    builtins.print(f"{now}", *args, **kwargs)
+    msg = ' '.join(str(arg) for arg in args)
+    
+    if '[ERROR]' in msg or '[GAGAL]' in msg:
+        colored_msg = msg.replace('[ERROR]', f'{Fore.RED}[ERROR]{Style.RESET_ALL}').replace('[GAGAL]', f'{Fore.RED}[GAGAL]{Style.RESET_ALL}')
+    elif '[SUCCESS]' in msg or '[SUKSES]' in msg:
+        colored_msg = msg.replace('[SUCCESS]', f'{Fore.GREEN}[SUCCESS]{Style.RESET_ALL}').replace('[SUKSES]', f'{Fore.GREEN}[SUKSES]{Style.RESET_ALL}')
+    elif '[WARNING]' in msg or '[PERINGATAN]' in msg:
+        colored_msg = msg.replace('[WARNING]', f'{Fore.YELLOW}[WARNING]{Style.RESET_ALL}').replace('[PERINGATAN]', f'{Fore.YELLOW}[PERINGATAN]{Style.RESET_ALL}')
+    elif '[INFO]' in msg:
+        colored_msg = msg.replace('[INFO]', f'{Fore.CYAN}[INFO]{Style.RESET_ALL}')
+    elif '[STATUS]' in msg:
+        colored_msg = msg.replace('[STATUS]', f'{Fore.BLUE}[STATUS]{Style.RESET_ALL}')
+    elif '[ALERT]' in msg:
+        colored_msg = msg.replace('[ALERT]', f'{Fore.MAGENTA}[ALERT]{Style.RESET_ALL}')
+    elif '[COMPLETE]' in msg:
+        colored_msg = msg.replace('[COMPLETE]', f'{Fore.GREEN + Style.BRIGHT}[COMPLETE]{Style.RESET_ALL}')
+    elif '[UPDATE]' in msg:
+        colored_msg = msg.replace('[UPDATE]', f'{Fore.CYAN}[UPDATE]{Style.RESET_ALL}')
+    else:
+        colored_msg = msg
+    
+    builtins.print(f"{Fore.WHITE}{now}{Style.RESET_ALL}", colored_msg, **kwargs)
 
 if sys.platform == 'win32':
     sys.stdout.reconfigure(encoding='utf-8')
@@ -89,10 +113,10 @@ def send_telegram(message):
             if response.status_code == 200:
                 return
             if response.status_code >= 400 and response.status_code < 500:
-                print(f"⚠️ Telegram API Error: {response.text}")
+                print(f"[WARNING] Telegram API Error: {response.text}")
                 return
         except Exception as e:
-            print(f"⚠️ Gagal kirim Telegram (Percobaan {attempt+1}/3): {e}")
+            print(f"[WARNING] Gagal kirim Telegram (Percobaan {attempt+1}/3): {e}")
         
         if attempt < 2:
             time.sleep(5)
@@ -136,9 +160,9 @@ def send_waha(message):
             response = requests.post(url, json=payload, headers=headers, timeout=30)
             if response.status_code == 201 or response.status_code == 200:
                 return
-            print(f"⚠️ WAHA API Error: {response.text}")
+            print(f"[WARNING] WAHA API Error: {response.text}")
         except Exception as e:
-            print(f"⚠️ Gagal kirim WAHA (Percobaan {attempt+1}/3): {e}")
+            print(f"[WARNING] Gagal kirim WAHA (Percobaan {attempt+1}/3): {e}")
         
         if attempt < 2:
             time.sleep(2)
@@ -154,7 +178,7 @@ def send_notification(message):
 def do_login():
     """Melakukan proses login untuk mendapatkan session cookie."""
     try:
-        print("🔑 Mencoba login ke Siakang...")
+        print("[INFO] Mencoba login ke Siakang...")
         res_page = session.get(URL_LOGIN)
         soup = BeautifulSoup(res_page.text, 'html.parser')
         csrf_token = soup.find('input', {'name': '_token'})['value']
@@ -169,25 +193,25 @@ def do_login():
         response = session.post(URL_LOGIN, data=login_data)
         if response.ok:
             if "Identitas tersebut tidak cocok dengan data kami" in response.text:
-                print("❌ Login gagal: Identitas (NIM/Password) salah.")
+                print("[ERROR] Login gagal: Identitas (NIM/Password) salah.")
                 return False
                 
-            print("✅ Login berhasil.")
+            print("[SUCCESS] Login berhasil.")
             if SELECTED_SEMESTER_URL:
-                print("🔄 Mengaktifkan kembali semester terpilih...")
+                print("[INFO] Mengaktifkan kembali semester terpilih...")
                 try:
                     session.get(SELECTED_SEMESTER_URL)
-                    print("✅ Semester berhasil diaktifkan ulang.")
+                    print("[SUCCESS] Semester berhasil diaktifkan ulang.")
                 except Exception as e:
-                    print(f"⚠️ Gagal mengaktifkan ulang semester: {e}")
+                    print(f"[WARNING] Gagal mengaktifkan ulang semester: {e}")
             return True
     except Exception as e:
-        print(f"❌ Error saat login: {e}")
+        print(f"[ERROR] Error saat login: {e}")
     return False
 
 def get_all_semesters():
     """Mengambil semua daftar semester yang tersedia dengan pagination."""
-    print("🔄 Mengambil daftar semester...")
+    print("[INFO] Mengambil daftar semester...")
     semesters = []
     current_url = URL_LIST_SEMESTER
     
@@ -195,7 +219,7 @@ def get_all_semesters():
         try:
             res = session.get(current_url)
             if res.status_code != 200:
-                print(f"⚠️ Gagal akses list semester: {res.status_code}")
+                print(f"[WARNING] Gagal akses list semester: {res.status_code}")
                 break
 
             soup = BeautifulSoup(res.text, 'html.parser')
@@ -229,7 +253,7 @@ def get_all_semesters():
                 current_url = None
                 
         except Exception as e:
-            print(f"⚠️ Error parsing list semester: {e}")
+            print(f"[WARNING] Error parsing list semester: {e}")
             break
             
     return semesters
@@ -240,7 +264,7 @@ def get_data():
         res = session.get(URL_TARGET)
         
         if res.status_code != 200:
-            print(f"⚠️ Server Kampus memberikan respon tidak normal: {res.status_code}")
+            print(f"[WARNING] Server Kampus memberikan respon tidak normal: {res.status_code}")
             return []
 
         soup_target = BeautifulSoup(res.text, 'html.parser')
@@ -253,29 +277,29 @@ def get_data():
                     break
             
             if hitung_ips_link:
-                print("🔄 Menjalankan proses Hitung IPS...")
+                print("[INFO] Menjalankan proses Hitung IPS...")
                 session.get(hitung_ips_link)
                 res = session.get(URL_TARGET)
                 soup_target = BeautifulSoup(res.text, 'html.parser')
         except Exception as e:
-            print(f"⚠️ Gagal menjalankan Hitung IPS: {e}")
+            print(f"[WARNING] Gagal menjalankan Hitung IPS: {e}")
 
         tbody = soup_target.find('tbody')
 
         if not tbody:
             if "auth/login" in res.url:
-                print("⚠️ Sesi habis (Redirect ke login).")
+                print("[WARNING] Sesi habis (Redirect ke login).")
             else:
-                print("⚠️ Tabel tidak ditemukan (Sesi gantung/halaman error).")
+                print("[WARNING] Tabel tidak ditemukan (Sesi gantung/halaman error).")
             
-            print("🔄 Memaksa login ulang untuk menyegarkan sesi...")
+            print("[INFO] Memaksa login ulang untuk menyegarkan sesi...")
             if do_login():
                 res = session.get(URL_TARGET)
                 soup_target = BeautifulSoup(res.text, 'html.parser')
                 tbody = soup_target.find('tbody')
             
             if not tbody:
-                print("❌ Masih gagal mendapatkan tabel setelah login ulang. Server mungkin sedang down.")
+                print("[ERROR] Masih gagal mendapatkan tabel setelah login ulang. Server mungkin sedang down.")
                 return []
 
         results = []
@@ -323,7 +347,7 @@ def get_data():
                 elif "IPK :" in text:
                     ipk_val = text.split(":")[-1].strip()
         except Exception as e:
-            print(f"⚠️ Gagal parsing IP/IPK: {e}")
+            print(f"[WARNING] Gagal parsing IP/IPK: {e}")
         
         user_name = "-"
         user_nim = LOGIN_ID
@@ -341,7 +365,7 @@ def get_data():
             user_name = user_name.replace("", "").strip()
                 
         except Exception as e:
-            print(f"⚠️ Gagal parsing Nama User: {e}")
+            print(f"[WARNING] Gagal parsing Nama User: {e}")
 
         final_data = {
             "nama": user_name,
@@ -355,21 +379,21 @@ def get_data():
         return final_data
 
     except Exception as e:
-        print(f"❌ Error serius di get_data: {e}")
+        print(f"[ERROR] Error serius di get_data: {e}")
         return None
 
 def get_krs_data():
     """Mengambil data ketersediaan matkul di halaman KRS."""
     try:
-        print(f"🔄 Mengakses halaman KRS: {URL_KRS}")
+        print(f"[INFO] Mengakses halaman KRS: {URL_KRS}")
         res = session.get(URL_KRS)
         
         if res.status_code != 200:
-            print(f"⚠️ Gagal akses KRS: {res.status_code}")
+            print(f"[WARNING] Gagal akses KRS: {res.status_code}")
             return None
 
         if "auth/login" in res.url:
-            print("⚠️ Sesi habis (Redirect ke login).")
+            print("[WARNING] Sesi habis (Redirect ke login).")
             if do_login():
                 res = session.get(URL_KRS)
             else:
@@ -393,7 +417,7 @@ def get_krs_data():
                 csrf_token = input_csrf['value']
         
         if not csrf_token:
-            print("⚠️ Gagal mendapatkan CSRF Token untuk request Livewire.")
+            print("[WARNING] Gagal mendapatkan CSRF Token untuk request Livewire.")
             return None
 
         target_component_name = "rencana-studi.rencana-studi-index"
@@ -414,13 +438,13 @@ def get_krs_data():
                 snapshot = html.unescape(raw_snapshot)
         
         if not snapshot or not component_id:
-            print(f"⚠️ Komponen Livewire '{target_component_name}' tidak ditemukan.")
+            print(f"[WARNING] Komponen Livewire '{target_component_name}' tidak ditemukan.")
             return None
 
-        print(f"✅ Livewire Component Found: ID={component_id}")
+        print(f"[SUCCESS] Livewire Component Found: ID={component_id}")
 
         if '"lazyIsolated":true' in snapshot or '"lazyLoaded":false' in snapshot:
-            print("💤 Component is Lazy Loaded. Waking it up...")
+            print("[INFO] Component is Lazy Loaded. Waking it up...")
             
             lazy_params = []
             x_intersect_match = re.search(r'x-intersect=["\']([^"\']+)["\']', full_tag)
@@ -464,13 +488,13 @@ def get_krs_data():
                     new_snapshot = h_json['components'][0].get('snapshot')
                     if new_snapshot:
                         snapshot = new_snapshot
-                        print("✅ Component hydrated! Snapshot updated.")
+                        print("[SUCCESS] Component hydrated! Snapshot updated.")
                     else:
-                        print("⚠️ Hydration succeeded but no new snapshot returned.")
+                        print("[WARNING] Hydration succeeded but no new snapshot returned.")
                 else:
-                    print(f"⚠️ Failed to hydrate lazy component ({h_res.status_code})")
+                    print(f"[WARNING] Failed to hydrate lazy component ({h_res.status_code})")
             except Exception as e:
-                print(f"⚠️ Error during hydration: {e}")
+                print(f"[WARNING] Error during hydration: {e}")
 
         found_courses = []
         
@@ -488,7 +512,7 @@ def get_krs_data():
         for course_name in TARGET_COURSES:
             if not course_name: continue
             
-            print(f"🔎 Mencari matkul: {course_name}...")
+            print(f"[INFO] Mencari matkul: {course_name}...")
             
             payload = {
                 "_token": csrf_token,
@@ -507,9 +531,9 @@ def get_krs_data():
                 p_res = session.post(livewire_url, json=payload, headers=headers)
                 
                 if p_res.status_code != 200:
-                    print(f"⚠️ Gagal search ({p_res.status_code})")
+                    print(f"[WARNING] Gagal search ({p_res.status_code})")
                     if p_res.status_code == 419:
-                        print("⚠️ Token expired, re-login next loop.")
+                        print("[WARNING] Token expired, re-login next loop.")
                         break
                     continue
 
@@ -520,21 +544,21 @@ def get_krs_data():
                     decoded_html = html.unescape(html_content)
 
                     if course_name.lower() in decoded_html.lower():
-                        print(f"✅ DITEMUKAN!")
+                        print(f"[SUCCESS] DITEMUKAN!")
                         found_courses.append(course_name)
                     
                 except json.JSONDecodeError:
-                        print("⚠️ Response bukan valid JSON")
+                        print("[WARNING] Response bukan valid JSON")
             
             except Exception as e:
-                print(f"⚠️ Error during search request: {e}")
+                print(f"[WARNING] Error during search request: {e}")
             
             time.sleep(1)
 
         return {"found": found_courses}
 
     except Exception as e:
-        print(f"❌ Error get_krs_data: {e}")
+        print(f"[ERROR] Error get_krs_data: {e}")
         return None
 
 def monitor():
@@ -548,10 +572,10 @@ def monitor():
     
     run_once = "--run-once" in sys.argv
     MONITOR_TEXT = "KRS" if MONITOR_TYPE == 'krs' else "NILAI"
-    print(f"🚀 Monitoring Akademik Siakang ({MONITOR_TEXT}) Dimulai... {'(Mode Sekali Jalan)' if run_once else ''}")
+    print(f"[INFO] Monitoring Akademik Siakang ({MONITOR_TEXT}) Dimulai... {'(Mode Sekali Jalan)' if run_once else ''}")
     
     if not do_login():
-        print("❌ Login awal gagal. Hentikan script.")
+        print("[ERROR] Login awal gagal. Hentikan script.")
         return
 
     SELECTED_SEMESTER_TITLE = ""
@@ -560,29 +584,29 @@ def monitor():
     if semesters:
         selected = None
         if TARGET_SEMESTER_CODE:
-            print(f"⚙️ Mencari semester dengan kode konfigurasi: {TARGET_SEMESTER_CODE}")
+            print(f"[INFO] Mencari semester dengan kode konfigurasi: {TARGET_SEMESTER_CODE}")
             for sem in semesters:
                 if sem['code'] == TARGET_SEMESTER_CODE:
                     selected = sem
                     break
             if not selected:
-                print(f"❌ Semester dengan kode '{TARGET_SEMESTER_CODE}' tidak ditemukan. Menggunakan default.")
+                print(f"[ERROR] Semester dengan kode '{TARGET_SEMESTER_CODE}' tidak ditemukan. Menggunakan default.")
         
         
         if selected:
             SELECTED_SEMESTER_URL = selected['url']
             SELECTED_SEMESTER_TITLE = selected['title']
-            print(f"✅ Memilih Semester: {selected['title']}")
-            print("🔄 Mengaktifkan semester...")
+            print(f"[SUCCESS] Memilih Semester: {selected['title']}")
+            print("[INFO] Mengaktifkan semester...")
             session.get(SELECTED_SEMESTER_URL)
             time.sleep(1)
         else:
-            print("ℹ️ Menggunakan semester aktif saat ini (tidak ada perubahan).")
+            print("[INFO] Menggunakan semester aktif saat ini (tidak ada perubahan).")
 
     if MONITOR_TYPE == 'krs':
-        print(f"📋 Target Matkul ({len(TARGET_COURSES)}): {', '.join(TARGET_COURSES)}")
+        print(f"[INFO] Target Matkul ({len(TARGET_COURSES)}): {', '.join(TARGET_COURSES)}")
         if not TARGET_COURSES:
-            print("⚠️ Tidak ada matkul yang ditargetkan! Pastikan konfigurasi 'Target Courses' diisi.")
+            print("[WARNING] Tidak ada matkul yang ditargetkan! Pastikan konfigurasi 'Target Courses' diisi.")
 
         if not run_once:
             send_notification(f"🤖 Bot Monitoring KRS Aktif!\nMemantau: {', '.join(TARGET_COURSES)}")
@@ -617,21 +641,21 @@ def monitor():
 
                         msg += f"\nCek segera di: [KRS Online]({URL_KRS})"
                         send_notification(msg)
-                        print(f"✅ Ditemukan {len(newly_found)} matkul baru yang sebelumnya tidak ada.")
+                        print(f"[SUCCESS] Ditemukan {len(newly_found)} matkul baru yang sebelumnya tidak ada.")
                     
                     lost_found = old_found - current_found
                     if lost_found:
-                        print(f"ℹ️ Matkul hilang dari pencarian: {', '.join(lost_found)}")
+                        print(f"[INFO] Matkul hilang dari pencarian: {', '.join(lost_found)}")
 
-                    print(f"📊 Status: {len(current_found)}/{len(TARGET_COURSES)} matkul ditemukan. (Next: {next_check})")
+                    print(f"[STATUS] Status: {len(current_found)}/{len(TARGET_COURSES)} matkul ditemukan. (Next: {next_check})")
                     
                     with open(FILE_DATA, "w") as f:
                         json.dump({"found": list(current_found)}, f)
                 else:
-                    print(f"⚠️ Gagal mendapatkan data KRS. (Next: {next_check})")
+                    print(f"[WARNING] Gagal mendapatkan data KRS. (Next: {next_check})")
                 
             except Exception as e:
-                print(f"❌ Error loop KRS: {e}")
+                print(f"[ERROR] Error loop KRS: {e}")
                 import traceback
                 traceback.print_exc()
             
@@ -640,7 +664,7 @@ def monitor():
         return
 
     if not semesters:
-        print("❌ Tidak dapat menemukan daftar semester. Menggunakan default sistem.")
+        print("[WARNING] Tidak dapat menemukan daftar semester. Menggunakan default sistem.")
     
     if not run_once:
         send_notification("🤖 Bot Monitoring Akademik Siakang Aktif!") 
@@ -652,7 +676,7 @@ def monitor():
             next_check = time.strftime('%H:%M:%S', time.localtime(time.time() + INTERVAL))
             
             if not current_data:
-                print(f"⚠️ Data kosong atau gagal diambil. Akan dicoba lagi pada: {next_check}")
+                print(f"[WARNING] Data kosong atau gagal diambil. Akan dicoba lagi pada: {next_check}")
             elif os.path.exists(FILE_DATA):
                 try:
                     with open(FILE_DATA, "r") as f:
@@ -689,9 +713,9 @@ def monitor():
                 if changes:
                     for change in changes:
                         send_notification(change)
-                    print(f"✅ Terdeteksi {len(changes)} perubahan nilai! (Cek lagi: {next_check})")
+                    print(f"[SUCCESS] Terdeteksi {len(changes)} perubahan nilai! (Cek lagi: {next_check})")
                 else:
-                    print(f"😴 Tidak ada perubahan. (Terakhir: {time.strftime('%H:%M:%S')} | Berikutnya: {next_check})")
+                    print(f"[STATUS] Tidak ada perubahan. (Terakhir: {time.strftime('%H:%M:%S')} | Berikutnya: {next_check})")
             
             if current_data:
                 current_courses = current_data.get('nilai', [])
@@ -711,19 +735,19 @@ def monitor():
                                     f"Silakan cek portal Siakang untuk detail lengkap.\n"
                                     f"[Login Siakang]({URL_TARGET})")
                     send_notification(msg_complete)
-                    print("✅ Notifikasi semua nilai keluar telah dikirim!")
+                    print("[SUCCESS] Notifikasi semua nilai keluar telah dikirim!")
 
             if current_data:
                 with open(FILE_DATA, "w") as f:
                     json.dump(current_data, f, indent=4)
                 
         except Exception as e:
-            print(f"❌ Error di loop monitor: {e}")
+            print(f"[ERROR] Error di loop monitor: {e}")
             import traceback
             traceback.print_exc()
         
         if run_once:
-            print("✅ Selesai (Mode Sekali Jalan).")
+            print("[SUCCESS] Selesai (Mode Sekali Jalan).")
             break
             
         time.sleep(INTERVAL)

@@ -45,20 +45,20 @@ def upgrade_db():
     columns = [info[1] for info in c.fetchall()]
     
     if 'position' not in columns:
-        print("Migrating database: Adding 'position' column...")
+        print("[INFO] Migrating database: Adding 'position' column...")
         c.execute("ALTER TABLE tasks ADD COLUMN position INTEGER DEFAULT 0")
         c.execute("UPDATE tasks SET position = id")
         
     if 'monitor_type' not in columns:
-        print("Migrating database: Adding 'monitor_type' column...")
+        print("[INFO] Migrating database: Adding 'monitor_type' column...")
         c.execute("ALTER TABLE tasks ADD COLUMN monitor_type TEXT DEFAULT 'nilai'")
         
     if 'target_courses' not in columns:
-        print("Migrating database: Adding 'target_courses' column...")
+        print("[INFO] Migrating database: Adding 'target_courses' column...")
         c.execute("ALTER TABLE tasks ADD COLUMN target_courses TEXT")
 
     if 'whatsapp_number' not in columns:
-        print("Migrating database: Adding 'whatsapp_number' column...")
+        print("[INFO] Migrating database: Adding 'whatsapp_number' column...")
         c.execute("ALTER TABLE tasks ADD COLUMN whatsapp_number TEXT")
         
     conn.commit()

@@ -1,63 +1,75 @@
 # Monitoring Akademik Siakang
 
+<br>
+
+<div align="center">
+   <img src="./assets/preview.png" alt="Preview Dashboard" style="border-radius: 12px; max-width: 80%; border: 2px solid #e5e7eb;" />
+</div>
+
+<br>
+
 Aplikasi monitoring akademik **Siakang Untirta** berbasis web yang robust dan modern. Pantau aktivitas akademik secara real-time dengan notifikasi multi-channel ke **Telegram** & **WhatsApp** melalui dashboard interaktif.
 
-## ✨ Fitur Utama
+## Fitur Utama
 
-- 🔄 **Dual Monitoring Mode**:
+- **Dual Monitoring Mode**:
   - **Monitor Nilai**: Pantau nilai baru, perubahan nilai, IP, dan IPK.
   - **Monitor KRS**: Pantau ketersediaan Matkul incaran saat masa KRS (Livewire Support).
 
-## 🛠️ Fitur Pendukung
+## Fitur Pendukung
 
-- 🖥️ **Web Dashboard Modern**: Antarmuka Vue.js responsif dengan Dark Mode.
-- 📲 **Multi-Channel Notification**: Mendukung **Telegram Bot** dan **WhatsApp** (via WAHA) untuk notifikasi instan.
-- 👥 **Multi-Account & Group Support**: Pantau banyak akun sekaligus. Notifikasi WA bisa dikirim ke **Grup WhatsApp**.
-- 🖱️ **Smart Reordering**: Atur urutan prioritas monitoring dengan drag & drop yang cerdas per kategori.
-- 📋 **One-Click Clone**: Duplikasi konfigurasi task untuk setup cepat.
-- 📊 **Visual Data Viewer**:
+- **Web Dashboard Modern**: Antarmuka Vue.js responsif dengan Dark Mode.
+- **Multi-Channel Notification**: Mendukung **Telegram Bot** dan **WhatsApp** (via WAHA) untuk notifikasi instan.
+- **Multi-Account & Group Support**: Pantau banyak akun sekaligus. Notifikasi WA bisa dikirim ke **Grup WhatsApp**.
+- **Smart Reordering**: Atur urutan prioritas monitoring dengan drag & drop yang cerdas per kategori.
+- **One-Click Clone**: Duplikasi konfigurasi task untuk setup cepat.
+- **Visual Data Viewer**:
   - **Nilai**: Lihat transkrip sementara, Mutu, SKS di tabel rapi.
   - **KRS**: Indikator warna (Hijau/Merah) untuk status matkul target (Found/Missing).
-- 🔧 **Full Control**: Start/Stop monitoring, lihat Live Logs, hapus Logs, dan Reset Data scraping langsung dari UI.
-- 🐳 **Docker Ready**: Deployment mudah dengan isolasi environment penuh.
+- **Full Control**: Start/Stop monitoring, lihat Live Logs, hapus Logs, dan Reset Data scraping langsung dari UI.
+- **Docker Ready**: Deployment mudah dengan isolasi environment penuh.
 
-## 🚀 Cara Install & Penggunaan
+## Cara Install & Penggunaan
 
 ### Opsi 1: Menggunakan Docker (Recommended)
 
-1. **Clone Repository**
+**Clone Repository**
 
-   ```bash
-   git clone https://github.com/mohfer/monitoring-akademik-siakang
-   cd monitoring-akademik-siakang
-   ```
+```bash
+git clone https://github.com/mohfer/monitoring-akademik-siakang
+cd monitoring-akademik-siakang
+```
 
-2. **Setup Environment Variable**
-   Salin `.env.example` ke `.env`:
+**Setup Environment Variable**
 
-   ```bash
-   cp .env.example .env
-   ```
+Salin `.env.example` ke `.env`:
 
-   Isi konfigurasi di dalamnya:
-   - `TELEGRAM_TOKEN`: Token bot Telegram Anda (optional).
-   - `WAHA_BASE_URL`: URL server WAHA (optional, untuk WhatsApp). **WAHA adalah service eksternal** yang perlu di-setup terpisah. Lihat [dokumentasi WAHA](https://waha.devlike.pro/) untuk instalasi.
-   - `WAHA_SESSION`: Nama session WAHA (default: `default`).
-   - `WAHA_API_KEY`: API Key WAHA jika server Anda menggunakan autentikasi.
+```bash
+cp .env.example .env
+```
 
-   **Note**: Minimal isi salah satu dari `TELEGRAM_TOKEN` atau `WAHA_BASE_URL` untuk menerima notifikasi.
+Isi konfigurasi di dalamnya:
 
-3. **Jalankan Aplikasi**
-   ```bash
-   docker-compose up -d --build
-   ```
-   Akses dashboard di: `http://localhost:3000`
+- `TELEGRAM_TOKEN`: Token bot Telegram Anda (optional).
+- `WAHA_BASE_URL`: URL server WAHA (optional, untuk WhatsApp). **WAHA adalah service eksternal** yang perlu di-setup terpisah. Lihat [dokumentasi WAHA](https://waha.devlike.pro/) untuk instalasi.
+- `WAHA_SESSION`: Nama session WAHA (default: `default`).
+- `WAHA_API_KEY`: API Key WAHA jika server Anda menggunakan autentikasi.
+
+**Note**: Minimal isi salah satu dari `TELEGRAM_TOKEN` atau `WAHA_BASE_URL` untuk menerima notifikasi.
+
+**Jalankan Aplikasi**
+
+```bash
+docker-compose up -d --build
+```
+
+Akses dashboard di: `http://localhost:3000`
 
 ### Opsi 2: Instalasi Manual (Developer)
 
 **Prerequisites:** Python 3.10+, Node.js 18+
 
-#### 1. Setup Backend
+**Setup Backend**
 
 Salin `.env.example` ke `.env` dan konfigurasikan.
 
@@ -69,7 +81,7 @@ pip install -r requirements.txt
 python -m uvicorn server.main:app --reload --port 8000
 ```
 
-#### 2. Setup Frontend
+**Setup Frontend**
 
 ```bash
 cd frontend
@@ -77,7 +89,7 @@ npm install
 npm run dev
 ```
 
-## 💡 Panduan Penggunaan
+## Panduan Penggunaan
 
 ### Membuat Monitor Baru
 
@@ -91,13 +103,13 @@ npm run dev
 5. **Konfigurasi Khusus**:
    - **Mode Nilai**: Klik "Fetch" Semester dan pilih semester aktif.
    - **Mode KRS**: Masukkan nama-nama matkul target (satu per baris) di kolom "Target Courses".
-6. Simpan & Klik **Start (▶)**.
+6. Simpan & Klik **Start**.
 
 ### Fitur Lain
 
 - **Clear Logs**: Klik ikon tempat sampah di modal Logs untuk membersihkan log lama.
 - **Reset Data**: Klik ikon reset di modal Data untuk menghapus cache hasil scraping agar notifikasi bisa muncul lagi saat data baru masuk.
 
-## ⚠️ Disclaimer
+## Disclaimer
 
 Aplikasi ini menggunakan metode _web scraping_. Perubahan pada website Siakang Untirta dapat mempengaruhi fungsionalitas. Gunakan interval waktu yang wajar (default 300s) agar tidak membebani server kampus.

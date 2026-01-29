@@ -17,6 +17,9 @@ import signal
 import time
 import json
 from .database import get_db_connection
+from colorama import Fore, Style, init
+
+init(autoreset=True)
 
 PYTHON_EXE = sys.executable
 SCRIPT_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "main.py"))
@@ -25,14 +28,14 @@ active_processes = {}
 
 def restore_running_tasks():
     """Restores tasks that were marked as 'running' in the database."""
-    print("🔄 Restoring running tasks...")
+    print(f"{Fore.CYAN}[INFO]{Style.RESET_ALL} Restoring running tasks...")
     conn = get_db_connection()
     tasks = conn.execute("SELECT * FROM tasks WHERE status = 'running'").fetchall()
     conn.close()
     
     for task in tasks:
         task_id = task['id']
-        print(f"   ↳ Restarting task: {task['name']} (ID: {task_id})")
+        print(f"{Fore.CYAN}[INFO]{Style.RESET_ALL} Restarting task: {task['name']} (ID: {task_id})")
         start_process(task_id)
 
 def start_process(task_id: int):
@@ -216,7 +219,7 @@ def cleanup_task_files(task_id: int):
             
         return True
     except Exception as e:
-        print(f"Error cleaning up files for task {task_id}: {e}")
+        print(f"[ERROR] Error cleaning up files for task {task_id}: {e}")
         return False
 
 def run_process_once(task_id: int):
